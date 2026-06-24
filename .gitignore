@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Secrets — never commit the real key
+.env
+.env.*
+!.env.example
+server/.env
+
+.DS_Store
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*

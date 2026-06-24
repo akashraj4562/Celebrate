@@ -1,0 +1,349 @@
+/* ── Universal DeliverableCard ──────────────────────────────────────────────── */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.card:hover {
+  box-shadow: var(--shadow);
+}
+.card.is-locked {
+  border-color: #cdded8;
+  box-shadow: inset 3px 0 0 var(--accent), var(--shadow-sm);
+}
+.card.is-stale {
+  border-color: #ecdcb0;
+}
+
+/* header (click to expand) */
+.card-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 15px 16px;
+  cursor: pointer;
+  align-items: start;
+}
+/* let the title column shrink so the 1-line rec truncates instead of overflowing */
+.card-head > div:first-child {
+  min-width: 0;
+}
+.card-module {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--muted);
+  font-weight: 650;
+  margin-bottom: 3px;
+}
+.card-title {
+  font-family: var(--serif);
+  font-size: 1.08rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.card-rec1 {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-top: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.head-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  text-align: right;
+}
+.card-cost .amt {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+.card-cost .basis {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.card-cost .none {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.head-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* badges (single priority slot) */
+.badge {
+  font-size: 0.68rem;
+  font-weight: 650;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.b-infeasible {
+  background: #fbe7e0;
+  color: #9a341a;
+  border: 1px solid #f0cabc;
+}
+.b-tight {
+  background: var(--warn-tint);
+  color: var(--warn);
+  border: 1px solid #ecd3c0;
+}
+.b-stale {
+  background: #fbf2d9;
+  color: #846520;
+  border: 1px solid #ecdcaa;
+}
+.b-lowconf {
+  background: #e9eef6;
+  color: #3a5a86;
+  border: 1px solid #d2dded;
+}
+.b-overridden {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  border: 1px solid #cfe0da;
+}
+
+.icon-btn {
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  transition: all 0.12s;
+  padding: 0;
+}
+.icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.icon-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.chev {
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s;
+}
+.chev.open {
+  transform: rotate(180deg);
+}
+
+/* body (expanded) */
+.card-body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--line);
+}
+.card-rec-full {
+  font-size: 0.98rem;
+  margin: 12px 0 4px;
+}
+.rec-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.rec-edit .row {
+  justify-content: flex-end;
+}
+
+.why-label,
+.cost-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 650;
+  margin: 14px 0 6px;
+}
+.why {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.why li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.why li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.feasibility-note {
+  font-size: 0.86rem;
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  margin-top: 12px;
+}
+.feasibility-note.infeasible {
+  background: #fbe7e0;
+  border: 1px solid #f0cabc;
+  color: #8a2f17;
+}
+.feasibility-note.tight {
+  background: var(--warn-tint);
+  border: 1px solid #ecd3c0;
+  color: var(--warn);
+}
+
+.nudge {
+  background: #eaf0f8;
+  border: 1px solid #d3e0f0;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 12px;
+  font-size: 0.86rem;
+  color: #34527d;
+  line-height: 1.5;
+}
+.nudge b {
+  color: #243b5c;
+}
+
+/* cost table */
+.cost-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0;
+}
+.cost-row input.lbl {
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  font-size: 0.9rem;
+}
+.cost-row input.lbl:focus {
+  box-shadow: none;
+  background: var(--paper);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.cost-row input.amt {
+  width: 96px;
+  text-align: right;
+  padding: 5px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.basis-chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.basis-chip.estimated {
+  color: var(--muted);
+}
+.basis-chip.quoted {
+  color: #3a5a86;
+  border-color: #cfdcef;
+  background: #eef3f9;
+}
+.basis-chip.actual {
+  color: var(--ok);
+  border-color: #bfe0cd;
+  background: var(--ok-tint);
+}
+.cost-row .rm {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.cost-row .rm:hover {
+  color: var(--terracotta);
+}
+.cost-total {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+  padding-top: 8px;
+  font-size: 0.95rem;
+}
+.cost-total b {
+  font-family: var(--serif);
+}
+
+/* alternatives */
+.alts {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.alt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+}
+.alt .a-rec {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.alt .a-why {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* uniform action grid */
+.card-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}

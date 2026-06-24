@@ -1,0 +1,104 @@
+/* ── Plan view (placeholder until the board lands) ─────────────────────────── */
+
+.planview {
+  padding: 48px 0 96px;
+}
+.planview .kicker {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.pv-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pv-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+  margin: 12px 0 26px;
+}
+.pv-meta .m b {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--ink);
+  font-weight: 600;
+  display: block;
+}
+.pv-meta .m span {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.callout {
+  background: var(--accent-tint);
+  border: 1px solid #cfe0da;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.callout h3 {
+  margin-bottom: 4px;
+}
+.callout p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.pv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 760px) {
+  .pv-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pv-person + .pv-person {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.pv-person .nm {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.pv-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.pill {
+  font-size: 0.78rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.pill.accent {
+  background: var(--accent-tint);
+  border-color: #cfe0da;
+  color: var(--accent-ink);
+}
+.kv {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+.kv b {
+  color: var(--ink);
+  font-weight: 600;
+}

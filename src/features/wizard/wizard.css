@@ -1,0 +1,147 @@
+/* ── Input wizard layout ───────────────────────────────────────────────────── */
+
+.wizard {
+  padding: 56px 0 140px;
+}
+
+.wizard-hero {
+  margin-bottom: 32px;
+}
+.wizard-hero h1 {
+  margin-bottom: 10px;
+}
+.wizard-hero p {
+  max-width: 60ch;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  margin: 0;
+}
+.wizard-hero .kicker {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.wizard-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.panel-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-right: 10px;
+  flex: none;
+}
+.panel-head .row {
+  align-items: baseline;
+}
+
+/* honoree card */
+.person {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  padding: 16px;
+}
+.person + .person {
+  margin-top: 12px;
+}
+.person-detail {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* cohort rows */
+.cohort {
+  display: grid;
+  grid-template-columns: 1fr 110px auto;
+  gap: 10px;
+  align-items: end;
+}
+.cohort .count {
+  text-align: right;
+}
+.cohort-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+/* inner circle */
+.inner-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.inner-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.inner-opt.on {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+
+/* sticky create bar */
+.create-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 253, 248, 0.92);
+  backdrop-filter: saturate(1.2) blur(8px);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 24px rgba(33, 31, 26, 0.06);
+}
+.create-bar .inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.create-bar .summary {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.create-bar .summary b {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+.create-bar .missing {
+  color: var(--warn);
+  font-size: 0.86rem;
+}
