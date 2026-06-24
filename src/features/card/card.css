@@ -347,3 +347,30 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+/* skeleton (while a card generates) */
+.card.skeleton {
+  border-style: dashed;
+}
+.sk-line {
+  height: 10px;
+  border-radius: 6px;
+  margin-top: 9px;
+  background: linear-gradient(90deg, var(--paper-2) 25%, #efe7d8 37%, var(--paper-2) 63%);
+  background-size: 400% 100%;
+  animation: sk-shimmer 1.4s ease infinite;
+}
+.sk-pulse {
+  font-size: 0.72rem;
+  color: var(--muted);
+  animation: sk-pulse 1.2s ease infinite;
+  white-space: nowrap;
+}
+@keyframes sk-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+@keyframes sk-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}

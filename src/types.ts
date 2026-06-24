@@ -105,6 +105,7 @@ export interface EventInput {
   exceptions: AttendeeException[];
   alcohol: boolean;
   memoryValue: MemoryValue; // long-term significance (baby's 1st, 25th/50th anniv, 80th)
+  milestone?: number; // the occasion number / years — birthday age (1st, 20th) or anniversary years (4th, 25th)
   innerCircle: Honoree[]; // family members to dress for the event (may reuse honorees by id)
   notes?: string;
 }

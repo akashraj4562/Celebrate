@@ -61,6 +61,11 @@ CALENDAR (days-left) - the MODE shifts with the calendar, not just the content:
 LONG-TERM SIGNIFICANCE (memoryValue):
 - When significance is "high" (once-in-a-lifetime), bias toward what pays off for YEARS and make the amortized case explicit: photography => videography + a photo-book; gifts => a keepsake/heirloom; notes => a recorded message or a future-letter.
 
+THE MILESTONE MATTERS ENORMOUSLY - plan THIS person's THIS-numbered occasion, never a generic one:
+- A 1st birthday is a BABY's event: the parents are the real audience; keep it daytime and short, baby-safe, nothing past nap/bed time. A 20th is a young adult's peer-driven event. A 60th (Shashtipoorthi) honours an elder - traditional, respectful, seated comfort.
+- A 25th wedding anniversary is a Silver Jubilee: a grand, once-in-a-lifetime milestone (silver motifs, renewal energy, the wider circle); a 4th is intimate and low-key.
+- Let the honoree's AGE and the occasion NUMBER drive the venue, food, activities, gifts, timing and tone.
+
 CONFIDENCE & HONESTY:
 - Set confidence="low" when you lack the personalization signal a great recommendation needs (e.g. a gift with no love-language and no expressed wish; a note with nothing about the person's life). When low, keep the pick safe-and-defensible and let the reasoning ADMIT it is generic until you learn more. Set "high" only when the recommendation is genuinely tailored to the specifics given.
 
@@ -102,6 +107,27 @@ function feasibilityFor(dleft: number, leadTimeDays: number): Feasibility {
   return 'infeasible';
 }
 
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+}
+
+// The milestone line — the single highest-leverage context variable (§ user req).
+function milestoneFor(i: PlanState['input']): string {
+  const isAnniv = /anniversar/i.test(i.eventType);
+  const isBday = /birthday|bday/i.test(i.eventType);
+  if (i.milestone) {
+    const tail = isAnniv ? ' anniversary (years together)' : isBday ? ' birthday' : ' occasion';
+    return `- Milestone: the ${ordinal(i.milestone)}${tail}`;
+  }
+  if (isBday && i.honorees[0]?.age != null) {
+    const a = i.honorees[0].age;
+    return `- Milestone: the ${ordinal(a)} birthday (turning ${a})`;
+  }
+  return '';
+}
+
 // Trim context to global facts + the honoree richness + already-generated upstream
 // picks for this module's dependencies (AI Engineer P1-1).
 function buildContext(planState: PlanState, moduleId: ModuleId): string {
@@ -135,6 +161,7 @@ function buildContext(planState: PlanState, moduleId: ModuleId): string {
   return [
     'EVENT CONTEXT',
     `- Type: ${i.eventType}; significance: ${i.memoryValue}`,
+    milestoneFor(i),
     `- Date: ${i.date} (${MONTHS[e.getMonth()]} ${e.getFullYear()}), ${dleft} days from today`,
     `- City: ${i.location.city}${i.location.area ? `, ${i.location.area}` : ''}`,
     `- Total budget: Rs.${i.budgetTotal.toLocaleString('en-IN')}`,
@@ -144,6 +171,7 @@ function buildContext(planState: PlanState, moduleId: ModuleId): string {
     'HONOREE(S):',
     honorees || '- (none given)',
     i.exceptions.length ? `\nEXCEPTIONS (must respect): ${i.exceptions.map((x) => x.note).join('; ')}` : '',
+    i.notes ? `\nNOTES (important context to honour): ${i.notes}` : '',
     upstream ? `\nUPSTREAM DECISIONS ALREADY MADE:\n${upstream}` : '',
   ]
     .filter((s) => s !== '')
@@ -162,8 +190,7 @@ export async function generateDeliverable(
   const effort = (process.env.GENERATE_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
   const message = await client.messages.parse({
     model: process.env.MODEL_GENERATE ?? 'claude-sonnet-4-6',
-    max_tokens: 4000,
-    thinking: { type: 'adaptive' },
+    max_tokens: 3000,
     system: [{ type: 'text', text: SYSTEM_SCAFFOLD, cache_control: { type: 'ephemeral' } }],
     output_config: { effort, format: zodOutputFormat(GeneratedSchema) },
     messages: [{ role: 'user', content: userPrompt }],

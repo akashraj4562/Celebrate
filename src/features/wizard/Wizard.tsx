@@ -119,9 +119,13 @@ export function Wizard() {
   const [exceptionDraft, setExceptionDraft] = useState('');
   const [alcohol, setAlcohol] = useState(false);
   const [memoryValue, setMemoryValue] = useState<MemoryValue>('standard');
+  const [milestone, setMilestone] = useState('');
+  const [notes, setNotes] = useState('');
   const [innerIds, setInnerIds] = useState<string[]>([]);
 
   const resolvedType = (eventType === 'other' ? eventTypeOther : eventType).trim();
+  const isAnniv = /anniversar/i.test(resolvedType);
+  const showMilestone = Boolean(resolvedType) && !/birthday|bday/i.test(resolvedType);
   const budgetNum = Number(budget) || 0;
   const namedHonorees = honorees.filter((h) => h.name.trim());
   const headcount = cohorts.reduce((n, c) => n + (Number(c.count) || 0), 0);
@@ -161,7 +165,9 @@ export function Wizard() {
       exceptions,
       alcohol,
       memoryValue,
+      milestone: milestone ? Number(milestone) : undefined,
       innerCircle,
+      notes: notes.trim() || undefined,
     };
     createPlan(`${finalHonorees[0].name}’s ${resolvedType}`, input);
   }
@@ -207,6 +213,21 @@ export function Wizard() {
                   />
                 )}
               </div>
+              {showMilestone && (
+                <div className="field">
+                  <label>
+                    {isAnniv ? 'Which anniversary? (years together)' : 'Milestone number'}{' '}
+                    <span className="muted">{isAnniv ? '' : '(optional)'}</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder={isAnniv ? 'e.g. 25 (silver jubilee)' : 'e.g. 50'}
+                    value={milestone}
+                    onChange={(e) => setMilestone(e.target.value)}
+                  />
+                </div>
+              )}
               <div className="grid-2">
                 <div className="field">
                   <label>Date</label>
@@ -248,7 +269,7 @@ export function Wizard() {
                 const open = openDetail[h.id];
                 return (
                   <div className="person" key={h.id}>
-                    <div className="grid-2">
+                    <div className="grid-3">
                       <div className="field">
                         <label>Name</label>
                         <input type="text" placeholder="e.g. Meera" value={h.name} onChange={(e) => patchHonoree(h.id, { name: e.target.value })} />
@@ -256,6 +277,10 @@ export function Wizard() {
                       <div className="field">
                         <label>Relation</label>
                         <input type="text" placeholder="e.g. mother" value={h.relation} onChange={(e) => patchHonoree(h.id, { relation: e.target.value })} />
+                      </div>
+                      <div className="field">
+                        <label>Age</label>
+                        <input type="number" min={0} placeholder="e.g. 60" value={h.age ?? ''} onChange={(e) => patchHonoree(h.id, { age: e.target.value })} />
                       </div>
                     </div>
                     <div className="row wrap" style={{ marginTop: 12, justifyContent: 'space-between' }}>
@@ -275,17 +300,11 @@ export function Wizard() {
                           Without love-language, a gift defaults to <b>“a premium perfume set.”</b> With it, the plan can reason its
                           way to <b>“a guided weekend cycling experience.”</b>
                         </div>
-                        <div className="grid-2">
-                          <div className="field">
-                            <label>Age <span className="muted">(optional)</span></label>
-                            <input type="number" min={0} value={h.age ?? ''} onChange={(e) => patchHonoree(h.id, { age: e.target.value })} />
-                          </div>
-                          <div className="field">
-                            <label>Mobility</label>
-                            <div className="seg">
-                              <button className={!h.mobility || h.mobility === 'full' ? 'on' : ''} onClick={() => patchHonoree(h.id, { mobility: 'full' })}>Full</button>
-                              <button className={h.mobility === 'limited' ? 'on' : ''} onClick={() => patchHonoree(h.id, { mobility: 'limited' })}>Limited</button>
-                            </div>
+                        <div className="field">
+                          <label>Mobility</label>
+                          <div className="seg">
+                            <button className={!h.mobility || h.mobility === 'full' ? 'on' : ''} onClick={() => patchHonoree(h.id, { mobility: 'full' })}>Full</button>
+                            <button className={h.mobility === 'limited' ? 'on' : ''} onClick={() => patchHonoree(h.id, { mobility: 'limited' })}>Limited</button>
                           </div>
                         </div>
                         <div className="field">
@@ -453,6 +472,17 @@ export function Wizard() {
                   </div>
                 </div>
               )}
+              <div className="field">
+                <label>
+                  Anything else worth knowing?{' '}
+                  <span className="muted">(community, rituals, a theme they’d love — optional)</span>
+                </label>
+                <textarea
+                  placeholder="e.g. Tamil Brahmin family; she’d love a carnatic-music theme; keep it traditional"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
             </div>
           </section>
         </div>

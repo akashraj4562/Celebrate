@@ -107,8 +107,14 @@ a {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 0.7fr;
+  gap: 16px;
+}
 @media (max-width: 640px) {
-  .grid-2 {
+  .grid-2,
+  .grid-3 {
     grid-template-columns: 1fr;
   }
 }

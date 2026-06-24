@@ -208,3 +208,9 @@ export const useStore = create<AppState>()(
 export function useCurrentPlan(): PlanState | null {
   return useStore((s) => (s.currentPlanId ? s.plans[s.currentPlanId]?.plan ?? null : null));
 }
+
+/** Non-hook read of the freshest current plan — for async orchestration (generate-all). */
+export function getCurrentPlanState(): PlanState | null {
+  const s = useStore.getState();
+  return s.currentPlanId ? s.plans[s.currentPlanId]?.plan ?? null : null;
+}
