@@ -15,6 +15,8 @@ import type {
   PlanState,
 } from './types';
 import { newPlanState, uid } from './lib/plan';
+import { recomputeBudget } from './engine/budget';
+import { cascadeFrom } from './engine/cascade';
 
 export interface SavedPlan {
   id: string;
@@ -43,7 +45,9 @@ interface AppState {
   replacePlan: (plan: PlanState) => void;
   upsertDeliverable: (d: Deliverable) => void;
   patchDeliverable: (instanceId: string, patch: Partial<Deliverable>) => void;
+  overrideDeliverable: (instanceId: string, patch: Partial<Deliverable>) => void;
   removeDeliverable: (instanceId: string) => void;
+  clearStale: () => void;
   setMoments: (moments: Moment[]) => void;
   setBudget: (budget: BudgetSummary) => void;
 
@@ -155,22 +159,32 @@ export const useStore = create<AppState>()(
         replacePlan: (plan) => writeCurrent(() => plan),
 
         upsertDeliverable: (d) =>
-          writeCurrent((plan) => ({
-            ...plan,
-            deliverables: { ...plan.deliverables, [d.instanceId]: d },
-          })),
+          writeCurrent((plan) => {
+            const next = { ...plan, deliverables: { ...plan.deliverables, [d.instanceId]: d } };
+            return { ...next, budget: recomputeBudget(next) };
+          }),
 
         patchDeliverable: (instanceId, patch) =>
           writeCurrent((plan) => {
             const existing = plan.deliverables[instanceId];
             if (!existing) return plan;
-            return {
+            const next = {
               ...plan,
-              deliverables: {
-                ...plan.deliverables,
-                [instanceId]: { ...existing, ...patch },
-              },
+              deliverables: { ...plan.deliverables, [instanceId]: { ...existing, ...patch } },
             };
+            return { ...next, budget: recomputeBudget(next) };
+          }),
+
+        // A user-intent value change → patch + cascade staleness downstream (§5).
+        overrideDeliverable: (instanceId, patch) =>
+          writeCurrent((plan) => {
+            const existing = plan.deliverables[instanceId];
+            if (!existing) return plan;
+            const withPatch = {
+              ...plan,
+              deliverables: { ...plan.deliverables, [instanceId]: { ...existing, ...patch } },
+            };
+            return cascadeFrom(withPatch, existing.moduleId, existing.momentId);
           }),
 
         removeDeliverable: (instanceId) =>
@@ -179,6 +193,14 @@ export const useStore = create<AppState>()(
             delete rest[instanceId];
             return { ...plan, deliverables: rest };
           }),
+
+        clearStale: () =>
+          writeCurrent((plan) => ({
+            ...plan,
+            deliverables: Object.fromEntries(
+              Object.entries(plan.deliverables).map(([k, d]) => [k, d.stale ? { ...d, stale: false } : d]),
+            ),
+          })),
 
         setMoments: (moments) => writeCurrent((plan) => ({ ...plan, moments })),
 

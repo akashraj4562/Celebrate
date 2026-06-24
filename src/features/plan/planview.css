@@ -123,3 +123,22 @@
   font-weight: 500;
   margin-left: 8px;
 }
+
+/* batched stale banner — one calm notice, not N sirens */
+.stale-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #fbf2d9;
+  border: 1px solid #ecdcaa;
+  color: #6f5618;
+  border-radius: var(--radius);
+  padding: 11px 16px;
+  margin-bottom: 20px;
+  font-size: 0.92rem;
+}
+.stale-banner b {
+  color: #5a4512;
+}

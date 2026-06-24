@@ -12,6 +12,8 @@ export function PlanView() {
   const plan = useCurrentPlan();
   const selectPlan = useStore((s) => s.selectPlan);
   const patchDeliverable = useStore((s) => s.patchDeliverable);
+  const overrideDeliverable = useStore((s) => s.overrideDeliverable);
+  const clearStale = useStore((s) => s.clearStale);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +33,7 @@ export function PlanView() {
   const doneCount = ALWAYS_ACTIVE_IDS.filter(isGenerated).length;
   const total = ALWAYS_ACTIVE_IDS.length;
   const anyCards = doneCount > 0;
+  const staleCount = Object.values(plan.deliverables).filter((d) => d.stale).length;
 
   // Generate one module (used by per-card Refresh).
   async function regen(moduleId: ModuleId) {
@@ -45,43 +48,62 @@ export function PlanView() {
     }
   }
 
-  // Generate every always-active module in dependency-ordered parallel waves.
-  // Cards stream in wave by wave; locked cards are never overwritten; a single
-  // failure degrades to one card you can Refresh, it never aborts the rest.
+  // Run the given modules in dependency-ordered parallel waves over the per-module
+  // endpoint. Cards stream in wave by wave; locked cards are never overwritten; a
+  // single failure degrades to one retryable card, it never aborts the rest.
+  async function runGeneration(ids: ModuleId[]): Promise<ModuleId[]> {
+    const idset = new Set(ids);
+    const done = new Set<ModuleId>();
+    const remaining = new Set<ModuleId>(ids);
+    const failures: ModuleId[] = [];
+    while (remaining.size) {
+      const ready = [...remaining].filter((id) =>
+        MODULES[id].dependsOn.every((dep) => !idset.has(dep) || done.has(dep)),
+      );
+      if (ready.length === 0) break; // safety — shouldn't happen on a DAG
+      await Promise.allSettled(
+        ready.map(async (id) => {
+          try {
+            const cur = getCurrentPlanState();
+            if (!cur) return;
+            if (cur.deliverables[instanceIdOf(id, PM)]?.locked) return; // respect locks
+            const d = await generateModule(id, cur);
+            useStore.getState().upsertDeliverable(d);
+          } catch {
+            failures.push(id);
+          } finally {
+            done.add(id);
+            remaining.delete(id);
+          }
+        }),
+      );
+    }
+    return failures;
+  }
+
   async function generateAll() {
     setGeneratingAll(true);
     setError(null);
-    const active = ALWAYS_ACTIVE_IDS;
-    const done = new Set<ModuleId>();
-    const remaining = new Set<ModuleId>(active);
-    const failures: ModuleId[] = [];
-
     try {
-      while (remaining.size) {
-        const ready = [...remaining].filter((id) =>
-          MODULES[id].dependsOn.every((dep) => !active.includes(dep) || done.has(dep)),
-        );
-        if (ready.length === 0) break; // safety — shouldn't happen on a DAG
-        await Promise.allSettled(
-          ready.map(async (id) => {
-            try {
-              const cur = getCurrentPlanState();
-              if (!cur) return;
-              if (cur.deliverables[instanceIdOf(id, PM)]?.locked) return; // respect locks
-              const d = await generateModule(id, cur);
-              useStore.getState().upsertDeliverable(d);
-            } catch {
-              failures.push(id);
-            } finally {
-              done.add(id);
-              remaining.delete(id);
-            }
-          }),
-        );
-      }
+      const failures = await runGeneration(ALWAYS_ACTIVE_IDS);
       if (failures.length) {
         setError(`${failures.length} card${failures.length > 1 ? 's' : ''} couldn’t generate — open one and hit Refresh to retry.`);
       }
+    } finally {
+      setGeneratingAll(false);
+    }
+  }
+
+  // Refresh all stale cards in dependency order (so each reads fresh upstream).
+  async function refreshAllStale() {
+    const cur = getCurrentPlanState();
+    if (!cur) return;
+    const staleIds = ALWAYS_ACTIVE_IDS.filter((id) => cur.deliverables[instanceIdOf(id, PM)]?.stale);
+    if (staleIds.length === 0) return;
+    setGeneratingAll(true);
+    setError(null);
+    try {
+      await runGeneration(staleIds);
     } finally {
       setGeneratingAll(false);
     }
@@ -130,6 +152,18 @@ export function PlanView() {
           {error && <div style={{ color: 'var(--warn)', marginTop: 10, fontSize: '0.9rem' }}>⚠ {error}</div>}
         </div>
 
+        {staleCount > 0 && !generatingAll && (
+          <div className="stale-banner">
+            <span>
+              <b>{staleCount}</b> card{staleCount > 1 ? 's' : ''} may be affected by your change — review or refresh.
+            </span>
+            <div className="row">
+              <button className="btn tiny primary" onClick={refreshAllStale}>↺ Refresh all</button>
+              <button className="btn tiny" onClick={clearStale}>Dismiss</button>
+            </div>
+          </div>
+        )}
+
         {(anyCards || generatingAll) &&
           groups.map(({ g, label, ids }) => {
             const visible = ids.filter((id) => isGenerated(id) || generatingAll);
@@ -148,6 +182,7 @@ export function PlanView() {
                         key={id}
                         deliverable={inst}
                         onPatch={(p) => patchDeliverable(inst.instanceId, p)}
+                        onOverride={(p) => overrideDeliverable(inst.instanceId, p)}
                         onRefresh={() => regen(id)}
                         onDiscuss={() => alert('Per-card chat lands in Step 12.')}
                       />

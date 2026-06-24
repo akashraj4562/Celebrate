@@ -41,15 +41,17 @@ function LockIcon({ locked }: { locked: boolean }) {
 interface Props {
   deliverable: Deliverable;
   onPatch: (patch: Partial<Deliverable>) => void;
+  onOverride?: (patch: Partial<Deliverable>) => void; // value change → cascade (falls back to onPatch)
   onRefresh?: () => void;
   onDiscuss?: () => void;
 }
 
-export function DeliverableCard({ deliverable: d, onPatch, onRefresh, onDiscuss }: Props) {
+export function DeliverableCard({ deliverable: d, onPatch, onOverride, onRefresh, onDiscuss }: Props) {
   const [open, setOpen] = useState(false);
   const [editingRec, setEditingRec] = useState(false);
   const [recDraft, setRecDraft] = useState(d.recommendation);
 
+  const applyValue = onOverride ?? onPatch; // value changes cascade; falls back to a plain patch
   const badge = topBadge(d);
   const total = cardTotal(d);
   const summaryBasis = basisSummary(d.costLines);
@@ -73,7 +75,7 @@ export function DeliverableCard({ deliverable: d, onPatch, onRefresh, onDiscuss 
   const removeLine = (id: string) => onPatch({ costLines: d.costLines.filter((l) => l.id !== id) });
 
   function saveRec() {
-    onPatch({ recommendation: recDraft.trim() || d.recommendation, status: d.locked ? d.status : 'overridden' });
+    applyValue({ recommendation: recDraft.trim() || d.recommendation, status: d.locked ? d.status : 'overridden' });
     setEditingRec(false);
   }
   function startOverride() {
@@ -82,7 +84,7 @@ export function DeliverableCard({ deliverable: d, onPatch, onRefresh, onDiscuss 
     setOpen(true);
   }
   function promote(alt: Alternative) {
-    onPatch({
+    applyValue({
       recommendation: alt.recommendation,
       reasoning: [alt.reasoning],
       status: 'overridden',
