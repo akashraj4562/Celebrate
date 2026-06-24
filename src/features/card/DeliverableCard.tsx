@@ -178,6 +178,9 @@ export function DeliverableCard({ deliverable: d, onPatch, onOverride, onRefresh
           )}
 
           <div className="cost-label">Cost</div>
+          {d.moduleId === 'food' && (
+            <div className="food-formula">portions = guests × portion-factor × 1.1 buffer</div>
+          )}
           {d.costLines.map((l) => (
             <div className="cost-row" key={l.id}>
               <input className="lbl" value={l.label} onChange={(e) => setLine(l.id, { label: e.target.value })} />

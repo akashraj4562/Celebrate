@@ -254,6 +254,12 @@
 }
 
 /* cost table */
+.food-formula {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-style: italic;
+  margin: 4px 0 8px;
+}
 .cost-row {
   display: grid;
   grid-template-columns: 1fr auto auto auto;

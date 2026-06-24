@@ -32,6 +32,7 @@ const GeneratedSchema = z.object({
     }),
   ),
   costLines: z.array(z.object({ label: z.string(), amount: z.number() })),
+  perCohortRates: z.array(z.object({ cohort: z.string(), ratePerPlate: z.number() })),
   tags: z.array(z.string()),
   leadTimeDays: z.number(),
   confidence: z.enum(['high', 'low']),
@@ -78,6 +79,7 @@ OUTPUT RULES:
 - leadTimeDays: when THIS specific recommendation must be actioned, using the anchors above.
 - confidence: "high" or "low" per the rule above.
 - tags: short machine-readable flags for downstream logic. Most modules return []. TIMING must tag the setting and time-of-day: one of "indoor"/"outdoor" AND one of "morning"/"afternoon"/"evening"/"night". VENUE must tag "at-home" if the pick is the host's home/backyard/terrace, otherwise "venue-hired".
+- perCohortRates: FOOD only — for each guest cohort, the per-plate rate in INR (veg < non-veg; kids less than adults). All other modules return []. For food, leave costLines empty — the app computes the food cost from portions x rate.
 Return only the structured object.`;
 
 // ── Per-module job slots (timing is the showcase; others get a sensible default
@@ -86,6 +88,7 @@ const MODULE_JOBS: Partial<Record<ModuleId, string>> = {
   timing: `MODULE: Timing & Setting.
 Decide the time of day, indoor vs outdoor, and the meal type (breakfast / brunch / lunch / hi-tea / dinner). Reason over: the city + month climate normals and sunset, guest comfort and any limited-mobility honoree, the honoree's energy, and headcount. Produce a headline like "Outdoor lunch, 12:30-4 PM". Timing GATES the venue, so set leadTimeDays to when it should be locked (a local event ~2-3 weeks out). It has no direct cost - leave costLines empty. REQUIRED tags: "indoor" or "outdoor", plus one of "morning"/"afternoon"/"evening"/"night".`,
   venue: `MODULE: Venue. Pick the place, scored on weather-fit (against the timing call), capacity for the headcount, INR/head against budget, theme fit, and step-free accessibility. Give a shortlist-of-one with the why and 1-2 alternatives. REQUIRED tag: "at-home" if the pick is the host's home / backyard / terrace, otherwise "venue-hired".`,
+  food: `MODULE: Food & Menu. Design the menu per cohort, HONOURING every exception (diabetic, Jain, vegan, nut-allergy, etc.). Then give per-plate rates: emit perCohortRates with one entry per guest cohort (match the cohort labels given), each an India-realistic INR per-plate rate for the city tier (veg < non-veg; kids ~half). Leave costLines EMPTY — the app computes the food cost from portions x rate. Your reasoning should name the actual dishes and call out how each exception is handled.`,
 };
 
 const MOMENT_ID: Record<MomentSlot, string> = {
@@ -129,6 +132,17 @@ function milestoneFor(i: PlanState['input']): string {
     return `- Milestone: the ${ordinal(a)} birthday (turning ${a})`;
   }
   return '';
+}
+
+function rateForCohort(rates: { cohort: string; ratePerPlate: number }[], c: { label: string; isKids?: boolean }): number {
+  const norm = (s: string) => s.toLowerCase();
+  const hit = rates.find((r) => norm(c.label).includes(norm(r.cohort)) || norm(r.cohort).includes(norm(c.label)));
+  if (hit) return Math.round(hit.ratePerPlate);
+  if (c.isKids) {
+    const kid = rates.find((r) => /kid|child/i.test(r.cohort));
+    if (kid) return Math.round(kid.ratePerPlate);
+  }
+  return Math.round(rates.reduce((s, r) => s + r.ratePerPlate, 0) / Math.max(1, rates.length));
 }
 
 // Trim context to global facts + the honoree richness + already-generated upstream
@@ -205,6 +219,30 @@ export async function generateDeliverable(
   const momentId = MOMENT_ID[meta.moment];
   const dleft = daysLeft(planState.input.date);
 
+  let costLines = gen.costLines.map((l) => ({
+    id: randomUUID().slice(0, 8),
+    label: l.label,
+    amount: l.amount,
+    basis: 'estimated' as const,
+  }));
+  // Food cost is computed first-principles: portions = count x portionFactor x 1.1 buffer (§8).
+  if (moduleId === 'food' && gen.perCohortRates.length > 0) {
+    costLines = planState.input.cohorts
+      .filter((c) => (c.count || 0) > 0)
+      .map((c) => {
+        const rate = rateForCohort(gen.perCohortRates, c);
+        const portions = Math.round((c.count || 0) * (c.portionFactor || 1) * 1.1);
+        return {
+          id: randomUUID().slice(0, 8),
+          label: `${c.label} — ${portions} plates @ ₹${rate}`,
+          amount: portions * rate,
+          perHead: true,
+          quantity: portions,
+          basis: 'estimated' as const,
+        };
+      });
+  }
+
   return {
     instanceId: instanceIdOf(moduleId, momentId),
     moduleId,
@@ -217,12 +255,7 @@ export async function generateDeliverable(
       reasoning: a.reasoning,
       ...(a.estimatedCost != null ? { estimatedCost: a.estimatedCost } : {}),
     })),
-    costLines: gen.costLines.map((l) => ({
-      id: randomUUID().slice(0, 8),
-      label: l.label,
-      amount: l.amount,
-      basis: 'estimated' as const,
-    })),
+    costLines,
     leadTimeDays: gen.leadTimeDays,
     status: 'suggested',
     feasibility: feasibilityFor(dleft, gen.leadTimeDays),

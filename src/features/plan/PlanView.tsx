@@ -7,6 +7,7 @@ import { SkeletonCard } from '../card/SkeletonCard';
 import { ALWAYS_ACTIVE_IDS, GROUP_LABEL, GROUP_ORDER, MODULES } from '../../modules';
 import { PRIMARY_MOMENT_ID, instanceIdOf, type ModuleId } from '../../types';
 import { activate } from '../../engine/activation';
+import { BudgetDashboard } from './BudgetDashboard';
 import './planview.css';
 
 export function PlanView() {
@@ -214,7 +215,9 @@ export function PlanView() {
           </div>
         )}
 
-        {(anyCards || generatingAll) && renderGroupedBoard(primaryIds, PM, generatingAll)}
+        <div className="plan-body">
+          <div className="plan-main">
+            {(anyCards || generatingAll) && renderGroupedBoard(primaryIds, PM, generatingAll)}
 
         {otherMoments.map((m) => {
           const ids = Object.values(plan.deliverables)
@@ -277,6 +280,11 @@ export function PlanView() {
               <div className="kv"><b>Dressing for it:</b> {input.innerCircle.map((h) => h.name).join(', ')}</div>
             )}
           </section>
+        </div>
+          </div>
+          <div className="plan-rail">
+            <BudgetDashboard budget={plan.budget} />
+          </div>
         </div>
       </div>
     </div>
