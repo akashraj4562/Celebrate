@@ -103,6 +103,7 @@ export function DeliverableCard({ deliverable: d, onPatch, onOverride, onRefresh
           <div className="card-module">{d.moduleId}</div>
           <div className="card-title">{d.title}</div>
           {!open && <div className="card-rec1">{d.recommendation}</div>}
+          {!open && d.reason && <div className="card-spawn">{d.reason}</div>}
         </div>
         <div className="head-right">
           <div className="card-cost">

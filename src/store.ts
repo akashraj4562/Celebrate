@@ -48,6 +48,7 @@ interface AppState {
   overrideDeliverable: (instanceId: string, patch: Partial<Deliverable>) => void;
   removeDeliverable: (instanceId: string) => void;
   clearStale: () => void;
+  dismissMoment: (momentId: string) => void;
   setMoments: (moments: Moment[]) => void;
   setBudget: (budget: BudgetSummary) => void;
 
@@ -201,6 +202,21 @@ export const useStore = create<AppState>()(
               Object.entries(plan.deliverables).map(([k, d]) => [k, d.stale ? { ...d, stale: false } : d]),
             ),
           })),
+
+        // Dismiss a Moment: remove it and its cards, and remember not to re-spawn it.
+        dismissMoment: (momentId) =>
+          writeCurrent((plan) => {
+            const deliverables = Object.fromEntries(
+              Object.entries(plan.deliverables).filter(([, d]) => d.momentId !== momentId),
+            );
+            const next = {
+              ...plan,
+              moments: plan.moments.filter((m) => m.id !== momentId),
+              deliverables,
+              dismissedMoments: [...(plan.dismissedMoments ?? []), momentId],
+            };
+            return { ...next, budget: recomputeBudget(next) };
+          }),
 
         setMoments: (moments) => writeCurrent((plan) => ({ ...plan, moments })),
 

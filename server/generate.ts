@@ -32,6 +32,7 @@ const GeneratedSchema = z.object({
     }),
   ),
   costLines: z.array(z.object({ label: z.string(), amount: z.number() })),
+  tags: z.array(z.string()),
   leadTimeDays: z.number(),
   confidence: z.enum(['high', 'low']),
 });
@@ -76,13 +77,15 @@ OUTPUT RULES:
 - costLines: this module's cost as line items in INR. Leave empty when the module has no direct cost (e.g. timing is a decision, not a purchase).
 - leadTimeDays: when THIS specific recommendation must be actioned, using the anchors above.
 - confidence: "high" or "low" per the rule above.
+- tags: short machine-readable flags for downstream logic. Most modules return []. TIMING must tag the setting and time-of-day: one of "indoor"/"outdoor" AND one of "morning"/"afternoon"/"evening"/"night". VENUE must tag "at-home" if the pick is the host's home/backyard/terrace, otherwise "venue-hired".
 Return only the structured object.`;
 
 // ── Per-module job slots (timing is the showcase; others get a sensible default
 // here and are fleshed out as generation scales in Step 7). ──
 const MODULE_JOBS: Partial<Record<ModuleId, string>> = {
   timing: `MODULE: Timing & Setting.
-Decide the time of day, indoor vs outdoor, and the meal type (breakfast / brunch / lunch / hi-tea / dinner). Reason over: the city + month climate normals and sunset, guest comfort and any limited-mobility honoree, the honoree's energy, and headcount. Produce a headline like "Outdoor lunch, 12:30-4 PM". Timing GATES the venue, so set leadTimeDays to when it should be locked (a local event ~2-3 weeks out). It has no direct cost - leave costLines empty.`,
+Decide the time of day, indoor vs outdoor, and the meal type (breakfast / brunch / lunch / hi-tea / dinner). Reason over: the city + month climate normals and sunset, guest comfort and any limited-mobility honoree, the honoree's energy, and headcount. Produce a headline like "Outdoor lunch, 12:30-4 PM". Timing GATES the venue, so set leadTimeDays to when it should be locked (a local event ~2-3 weeks out). It has no direct cost - leave costLines empty. REQUIRED tags: "indoor" or "outdoor", plus one of "morning"/"afternoon"/"evening"/"night".`,
+  venue: `MODULE: Venue. Pick the place, scored on weather-fit (against the timing call), capacity for the headcount, INR/head against budget, theme fit, and step-free accessibility. Give a shortlist-of-one with the why and 1-2 alternatives. REQUIRED tag: "at-home" if the pick is the host's home / backyard / terrace, otherwise "venue-hired".`,
 };
 
 const MOMENT_ID: Record<MomentSlot, string> = {
@@ -228,5 +231,6 @@ export async function generateDeliverable(
     active: true,
     locked: false,
     chat: [],
+    tags: gen.tags,
   };
 }

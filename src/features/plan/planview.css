@@ -142,3 +142,26 @@
 .stale-banner b {
   color: #5a4512;
 }
+
+/* a non-primary Moment (midnight cake-cutting, morning wake-up) */
+.moment-section {
+  margin: 10px 0 24px;
+  padding-top: 20px;
+  border-top: 2px dashed var(--line-strong);
+}
+.moment-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.moment-head h2 {
+  margin: 0;
+}
+.moment-reason {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-top: 5px;
+  max-width: 70ch;
+}

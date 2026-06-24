@@ -197,6 +197,7 @@ export interface Deliverable {
   subItems?: SubDeliverable[]; // clothing per-person cards (§10)
   reason?: string; // why this (conditional) module was spawned — shown to the user (§6)
   orphaned?: boolean; // locked but its activation rule no longer holds (§6 / engine)
+  tags?: string[]; // machine-readable activation signals (timing: 'outdoor'/'evening'; venue: 'at-home')
 }
 
 // ── Budget ──────────────────────────────────────────────────────────────────
@@ -256,6 +257,7 @@ export interface PlanState {
   input: EventInput;
   moments: Moment[]; // at least one primary moment; birthdays add a midnight moment
   deliverables: Record<string, Deliverable>; // keyed by instanceId (`${moduleId}__${momentId}`)
+  dismissedMoments?: string[]; // moment ids the user dismissed — don't re-spawn (§4a)
   budget: BudgetSummary;
   version: number;
   updatedAt: string;

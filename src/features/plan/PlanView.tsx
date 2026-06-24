@@ -6,6 +6,7 @@ import { DeliverableCard } from '../card/DeliverableCard';
 import { SkeletonCard } from '../card/SkeletonCard';
 import { ALWAYS_ACTIVE_IDS, GROUP_LABEL, GROUP_ORDER, MODULES } from '../../modules';
 import { PRIMARY_MOMENT_ID, instanceIdOf, type ModuleId } from '../../types';
+import { activate } from '../../engine/activation';
 import './planview.css';
 
 export function PlanView() {
@@ -14,6 +15,7 @@ export function PlanView() {
   const patchDeliverable = useStore((s) => s.patchDeliverable);
   const overrideDeliverable = useStore((s) => s.overrideDeliverable);
   const clearStale = useStore((s) => s.clearStale);
+  const dismissMoment = useStore((s) => s.dismissMoment);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +68,9 @@ export function PlanView() {
           try {
             const cur = getCurrentPlanState();
             if (!cur) return;
-            if (cur.deliverables[instanceIdOf(id, PM)]?.locked) return; // respect locks
+            const mslot = MODULES[id].moment;
+            const mid = mslot === 'primary' ? PM : mslot;
+            if (cur.deliverables[instanceIdOf(id, mid)]?.locked) return; // respect locks
             const d = await generateModule(id, cur);
             useStore.getState().upsertDeliverable(d);
           } catch {
@@ -85,9 +89,23 @@ export function PlanView() {
     setGeneratingAll(true);
     setError(null);
     try {
-      const failures = await runGeneration(ALWAYS_ACTIVE_IDS);
-      if (failures.length) {
-        setError(`${failures.length} card${failures.length > 1 ? 's' : ''} couldn’t generate — open one and hit Refresh to retry.`);
+      const f1 = await runGeneration(ALWAYS_ACTIVE_IDS);
+      // Activation (§6): spawn conditional + moment modules from inputs + generated tags.
+      let f2: ModuleId[] = [];
+      const cur = getCurrentPlanState();
+      if (cur) {
+        const { plan: nextPlan, spawn } = activate(cur);
+        useStore.getState().replacePlan(nextPlan);
+        f2 = await runGeneration(spawn.map((s) => s.moduleId));
+        for (const s of spawn) {
+          const slot = MODULES[s.moduleId].moment;
+          const mid = slot === 'primary' ? PM : slot;
+          useStore.getState().patchDeliverable(instanceIdOf(s.moduleId, mid), { reason: s.reason });
+        }
+      }
+      const fails = [...f1, ...f2];
+      if (fails.length) {
+        setError(`${fails.length} card${fails.length > 1 ? 's' : ''} couldn’t generate — open one and hit Refresh to retry.`);
       }
     } finally {
       setGeneratingAll(false);
@@ -109,11 +127,43 @@ export function PlanView() {
     }
   }
 
-  const groups = GROUP_ORDER.map((g) => ({
-    g,
-    label: GROUP_LABEL[g],
-    ids: ALWAYS_ACTIVE_IDS.filter((id) => MODULES[id].group === g),
-  })).filter((grp) => grp.ids.length > 0);
+  // Primary-moment module set = always-active + any spawned conditionals in `main`.
+  const primaryConditionalIds = Object.values(plan.deliverables)
+    .filter((d) => d.momentId === PM && MODULES[d.moduleId].kind !== 'always')
+    .map((d) => d.moduleId);
+  const primaryIds: ModuleId[] = [...new Set<ModuleId>([...ALWAYS_ACTIVE_IDS, ...primaryConditionalIds])];
+  const otherMoments = plan.moments.filter((m) => !m.isPrimary);
+
+  const renderGroupedBoard = (moduleIds: ModuleId[], momentId: string, withSkeletons: boolean) =>
+    GROUP_ORDER.map((g) => {
+      const ids = moduleIds.filter((id) => MODULES[id].group === g);
+      const visible = ids.filter(
+        (id) => plan.deliverables[instanceIdOf(id, momentId)] || (withSkeletons && ALWAYS_ACTIVE_IDS.includes(id)),
+      );
+      if (visible.length === 0) return null;
+      return (
+        <section className="board-group" key={`${momentId}-${g}`}>
+          <div className="group-head">{GROUP_LABEL[g]}</div>
+          <div className="board">
+            {visible.map((id) => {
+              const inst = plan.deliverables[instanceIdOf(id, momentId)];
+              return inst ? (
+                <DeliverableCard
+                  key={id}
+                  deliverable={inst}
+                  onPatch={(p) => patchDeliverable(inst.instanceId, p)}
+                  onOverride={(p) => overrideDeliverable(inst.instanceId, p)}
+                  onRefresh={() => regen(id)}
+                  onDiscuss={() => alert('Per-card chat lands in Step 12.')}
+                />
+              ) : (
+                <SkeletonCard key={id} title={MODULES[id].title} kicker={id} />
+              );
+            })}
+          </div>
+        </section>
+      );
+    });
 
   return (
     <div className="planview">
@@ -164,36 +214,26 @@ export function PlanView() {
           </div>
         )}
 
-        {(anyCards || generatingAll) &&
-          groups.map(({ g, label, ids }) => {
-            const visible = ids.filter((id) => isGenerated(id) || generatingAll);
-            if (visible.length === 0) return null;
-            return (
-              <section className="board-group" key={g}>
-                <div className="group-head">
-                  {label}
-                  <span className="count">{visible.filter(isGenerated).length}/{ids.length}</span>
+        {(anyCards || generatingAll) && renderGroupedBoard(primaryIds, PM, generatingAll)}
+
+        {otherMoments.map((m) => {
+          const ids = Object.values(plan.deliverables)
+            .filter((d) => d.momentId === m.id)
+            .map((d) => d.moduleId);
+          if (ids.length === 0) return null;
+          return (
+            <section className="moment-section" key={m.id}>
+              <div className="moment-head">
+                <div>
+                  <h2>{m.label}</h2>
+                  {m.reason && <div className="moment-reason">{m.reason}</div>}
                 </div>
-                <div className="board">
-                  {visible.map((id) => {
-                    const inst = plan.deliverables[instanceIdOf(id, PM)];
-                    return inst ? (
-                      <DeliverableCard
-                        key={id}
-                        deliverable={inst}
-                        onPatch={(p) => patchDeliverable(inst.instanceId, p)}
-                        onOverride={(p) => overrideDeliverable(inst.instanceId, p)}
-                        onRefresh={() => regen(id)}
-                        onDiscuss={() => alert('Per-card chat lands in Step 12.')}
-                      />
-                    ) : (
-                      <SkeletonCard key={id} title={MODULES[id].title} kicker={id} />
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+                <button className="btn ghost tiny" onClick={() => dismissMoment(m.id)}>Dismiss</button>
+              </div>
+              {renderGroupedBoard(ids, m.id, false)}
+            </section>
+          );
+        })}
 
         <div className="pv-grid" style={{ marginTop: 8 }}>
           <section className="panel">
