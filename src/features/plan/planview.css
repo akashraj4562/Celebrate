@@ -343,3 +343,84 @@
 .alloc-nums .muted {
   color: var(--muted);
 }
+
+/* ── rail tabs (Budget | Timeline) + the prep timeline ─────────────────────── */
+.rail-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.rail-tabs button {
+  flex: 1;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.rail-tabs button:hover {
+  border-color: var(--accent);
+}
+.rail-tabs button.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.br-of.late {
+  color: var(--terracotta);
+  font-weight: 600;
+}
+
+.tl-bucket {
+  margin-bottom: 6px;
+}
+.tl-head {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 650;
+  color: var(--muted);
+  margin: 16px 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.tl-head.red {
+  color: var(--terracotta);
+  border-color: #ecd3c0;
+}
+.tl-head.now {
+  color: var(--accent-ink);
+}
+.tl-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+}
+.tl-item.infeasible .tl-title {
+  color: var(--terracotta);
+  font-weight: 600;
+}
+.tl-item.tight .tl-title {
+  color: var(--warn);
+}
+.tl-title {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+.tl-moment {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+.tl-when {
+  font-size: 0.74rem;
+  color: var(--muted);
+  white-space: nowrap;
+}

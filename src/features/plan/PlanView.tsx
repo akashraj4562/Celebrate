@@ -7,7 +7,7 @@ import { SkeletonCard } from '../card/SkeletonCard';
 import { ALWAYS_ACTIVE_IDS, GROUP_LABEL, GROUP_ORDER, MODULES } from '../../modules';
 import { PRIMARY_MOMENT_ID, instanceIdOf, type ModuleId } from '../../types';
 import { activate } from '../../engine/activation';
-import { BudgetDashboard } from './BudgetDashboard';
+import { PlanRail } from './PlanRail';
 import './planview.css';
 
 export function PlanView() {
@@ -283,7 +283,7 @@ export function PlanView() {
         </div>
           </div>
           <div className="plan-rail">
-            <BudgetDashboard budget={plan.budget} />
+            <PlanRail plan={plan} />
           </div>
         </div>
       </div>
