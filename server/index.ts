@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateDeliverable } from './generate';
+import { chatModule } from './chat';
 
 // Load server/.env regardless of the process's working directory.
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '.env') });
@@ -64,6 +65,25 @@ app.post('/api/module/generate', async (req, res) => {
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'unknown error';
     console.error('[/api/module/generate]', detail);
+    res.status(500).json({ error: detail });
+  }
+});
+
+// Per-card chat agent (spec §9): justify / ingest quotes / propose a revision.
+app.post('/api/module/chat', async (req, res) => {
+  const { moduleId, planState, history, userMessage } = req.body ?? {};
+  if (!moduleId || !planState?.input || typeof userMessage !== 'string') {
+    res.status(400).json({ error: 'moduleId, planState and userMessage are required' });
+    return;
+  }
+  try {
+    const t0 = Date.now();
+    const result = await chatModule(anthropic, { moduleId, planState, history: history ?? [], userMessage });
+    console.log(`[chat] ${moduleId} in ${Date.now() - t0}ms${result.proposal ? ' (proposal)' : ''}`);
+    res.json(result);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'unknown error';
+    console.error('[/api/module/chat]', detail);
     res.status(500).json({ error: detail });
   }
 });

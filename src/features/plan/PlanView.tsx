@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { getCurrentPlanState, useCurrentPlan, useStore } from '../../store';
 import { daysLeft } from '../../lib/plan';
-import { generateModule } from '../../api';
+import { chatModule, generateModule, type ChatProposal } from '../../api';
 import { DeliverableCard } from '../card/DeliverableCard';
 import { SkeletonCard } from '../card/SkeletonCard';
 import { ALWAYS_ACTIVE_IDS, GROUP_LABEL, GROUP_ORDER, MODULES } from '../../modules';
 import { PRIMARY_MOMENT_ID, instanceIdOf, type ModuleId } from '../../types';
 import { activate } from '../../engine/activation';
-import { PlanRail } from './PlanRail';
+import { PlanRail, type RailTab } from './PlanRail';
 import './planview.css';
 
 export function PlanView() {
@@ -19,6 +19,11 @@ export function PlanView() {
   const dismissMoment = useStore((s) => s.dismissMoment);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Per-card chat (§9) — rail tab is lifted so "Discuss" can jump to it.
+  const [railTab, setRailTab] = useState<RailTab>('budget');
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<Record<string, ChatProposal>>({});
+  const [chatBusy, setChatBusy] = useState(false);
 
   if (!plan) return null;
 
@@ -128,6 +133,94 @@ export function PlanView() {
     }
   }
 
+  // Open a card's chat in the rail.
+  function discuss(instanceId: string) {
+    setFocusedId(instanceId);
+    setRailTab('chat');
+  }
+
+  // Send one chat turn for the focused card (§9). Optimistically appends the user
+  // message, then the assistant reply; a returned proposal is held for Apply.
+  async function sendChat(message: string) {
+    const inst = focusedId;
+    if (!inst) return;
+    const before = getCurrentPlanState();
+    const d = before?.deliverables[inst];
+    if (!before || !d) return;
+    const history = d.chat; // prior turns, before this message
+    patchDeliverable(inst, { chat: [...history, { role: 'user', content: message }] });
+    setChatBusy(true);
+    setError(null);
+    try {
+      const res = await chatModule(d.moduleId, getCurrentPlanState() ?? before, history, message);
+      const cur = getCurrentPlanState();
+      const cd = cur?.deliverables[inst];
+      if (cd) patchDeliverable(inst, { chat: [...cd.chat, { role: 'assistant', content: res.reply }] });
+      setProposals((p) => {
+        if (res.proposal) return { ...p, [inst]: res.proposal };
+        const { [inst]: _drop, ...rest } = p;
+        return rest;
+      });
+    } catch (e) {
+      const cur = getCurrentPlanState();
+      const cd = cur?.deliverables[inst];
+      const msg = e instanceof Error ? e.message : String(e);
+      if (cd) patchDeliverable(inst, { chat: [...cd.chat, { role: 'assistant', content: `⚠ ${msg}` }] });
+    } finally {
+      setChatBusy(false);
+    }
+  }
+
+  // Apply the focused card's proposal THROUGH the engine — override (which cascades
+  // downstream stale), then activation (tags may spawn/deactivate modules), then
+  // generate anything newly spawned. Never a silent edit (§9).
+  async function applyProposal(lock: boolean) {
+    const inst = focusedId;
+    const proposal = inst ? proposals[inst] : undefined;
+    if (!inst || !proposal) return;
+    const patch: Parameters<typeof overrideDeliverable>[1] = {
+      status: 'overridden',
+      ...(proposal.recommendation ? { recommendation: proposal.recommendation } : {}),
+      ...(proposal.reasoning.length ? { reasoning: proposal.reasoning } : {}),
+      ...(proposal.costLines.length ? { costLines: proposal.costLines } : {}),
+      ...(proposal.tags.length ? { tags: proposal.tags } : {}),
+      ...(proposal.ingestedQuotes.length ? { ingestedQuotes: proposal.ingestedQuotes } : {}),
+      ...(lock ? { locked: true } : {}),
+    };
+    overrideDeliverable(inst, patch);
+    setProposals((p) => {
+      const { [inst]: _drop, ...rest } = p;
+      return rest;
+    });
+    // Re-run activation: a changed venue tag can spawn home-catering / weather backup.
+    const cur = getCurrentPlanState();
+    if (!cur) return;
+    const { plan: nextPlan, spawn } = activate(cur);
+    useStore.getState().replacePlan(nextPlan);
+    if (spawn.length) {
+      setGeneratingAll(true);
+      try {
+        await runGeneration(spawn.map((s) => s.moduleId));
+        for (const s of spawn) {
+          const slot = MODULES[s.moduleId].moment;
+          const mid = slot === 'primary' ? PM : slot;
+          useStore.getState().patchDeliverable(instanceIdOf(s.moduleId, mid), { reason: s.reason });
+        }
+      } finally {
+        setGeneratingAll(false);
+      }
+    }
+  }
+
+  function dismissProposal() {
+    const inst = focusedId;
+    if (!inst) return;
+    setProposals((p) => {
+      const { [inst]: _drop, ...rest } = p;
+      return rest;
+    });
+  }
+
   // Primary-moment module set = always-active + any spawned conditionals in `main`.
   const primaryConditionalIds = Object.values(plan.deliverables)
     .filter((d) => d.momentId === PM && MODULES[d.moduleId].kind !== 'always')
@@ -155,7 +248,7 @@ export function PlanView() {
                   onPatch={(p) => patchDeliverable(inst.instanceId, p)}
                   onOverride={(p) => overrideDeliverable(inst.instanceId, p)}
                   onRefresh={() => regen(id)}
-                  onDiscuss={() => alert('Per-card chat lands in Step 12.')}
+                  onDiscuss={() => discuss(inst.instanceId)}
                 />
               ) : (
                 <SkeletonCard key={id} title={MODULES[id].title} kicker={id} />
@@ -283,7 +376,19 @@ export function PlanView() {
         </div>
           </div>
           <div className="plan-rail">
-            <PlanRail plan={plan} />
+            <PlanRail
+              plan={plan}
+              tab={railTab}
+              setTab={setRailTab}
+              chat={{
+                deliverable: focusedId ? plan.deliverables[focusedId] ?? null : null,
+                proposal: focusedId ? proposals[focusedId] : undefined,
+                busy: chatBusy,
+                onSend: sendChat,
+                onApply: applyProposal,
+                onDismiss: dismissProposal,
+              }}
+            />
           </div>
         </div>
       </div>

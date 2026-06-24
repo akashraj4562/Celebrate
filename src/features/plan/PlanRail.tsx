@@ -1,12 +1,25 @@
-import { useState } from 'react';
 import type { PlanState } from '../../types';
 import { computeTimeline } from '../../engine/timeline';
 import { BudgetDashboard } from './BudgetDashboard';
 import { PrepTimeline } from './PrepTimeline';
+import { ChatPanel, type ChatPanelProps } from './ChatPanel';
 
-/** The sticky right rail — Budget | Timeline (Chat tab lands in Step 12). */
-export function PlanRail({ plan }: { plan: PlanState }) {
-  const [tab, setTab] = useState<'budget' | 'timeline'>('budget');
+export type RailTab = 'budget' | 'timeline' | 'chat';
+
+/** The sticky right rail — Budget | Timeline | Chat. Tab state is lifted to
+ *  PlanView so hitting "Discuss" on a card can jump straight to the Chat tab. */
+export function PlanRail({
+  plan,
+  tab,
+  setTab,
+  chat,
+}: {
+  plan: PlanState;
+  tab: RailTab;
+  setTab: (t: RailTab) => void;
+  chat: ChatPanelProps;
+}) {
+  const hasProposal = Boolean(chat.proposal);
   return (
     <div className="rail">
       <div className="rail-tabs">
@@ -16,12 +29,13 @@ export function PlanRail({ plan }: { plan: PlanState }) {
         <button className={tab === 'timeline' ? 'on' : ''} onClick={() => setTab('timeline')}>
           Timeline
         </button>
+        <button className={tab === 'chat' ? 'on' : ''} onClick={() => setTab('chat')}>
+          Chat{hasProposal && tab !== 'chat' ? <span className="tab-dot" /> : null}
+        </button>
       </div>
-      {tab === 'budget' ? (
-        <BudgetDashboard budget={plan.budget} />
-      ) : (
-        <PrepTimeline timeline={computeTimeline(plan)} />
-      )}
+      {tab === 'budget' && <BudgetDashboard budget={plan.budget} />}
+      {tab === 'timeline' && <PrepTimeline timeline={computeTimeline(plan)} />}
+      {tab === 'chat' && <ChatPanel {...chat} />}
     </div>
   );
 }
