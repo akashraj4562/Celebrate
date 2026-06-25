@@ -7,7 +7,9 @@ import { SkeletonCard } from '../card/SkeletonCard';
 import { ALWAYS_ACTIVE_IDS, GROUP_LABEL, GROUP_ORDER, MODULES } from '../../modules';
 import { PRIMARY_MOMENT_ID, instanceIdOf, type ModuleId } from '../../types';
 import { activate } from '../../engine/activation';
+import { buildArchivedEvent, pastEventsIndex } from '../../engine/archive';
 import { PlanRail, type RailTab } from './PlanRail';
+import { ArchiveDialog } from './ArchiveDialog';
 import './planview.css';
 
 export function PlanView() {
@@ -24,6 +26,8 @@ export function PlanView() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [proposals, setProposals] = useState<Record<string, ChatProposal>>({});
   const [chatBusy, setChatBusy] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const archiveEvent = useStore((s) => s.archiveEvent);
 
   if (!plan) return null;
 
@@ -152,7 +156,8 @@ export function PlanView() {
     setChatBusy(true);
     setError(null);
     try {
-      const res = await chatModule(d.moduleId, getCurrentPlanState() ?? before, history, message);
+      const past = pastEventsIndex(useStore.getState().archivedEvents);
+      const res = await chatModule(d.moduleId, getCurrentPlanState() ?? before, history, message, past);
       const cur = getCurrentPlanState();
       const cd = cur?.deliverables[inst];
       if (cd) patchDeliverable(inst, { chat: [...cd.chat, { role: 'assistant', content: res.reply }] });
@@ -219,6 +224,16 @@ export function PlanView() {
       const { [inst]: _drop, ...rest } = p;
       return rest;
     });
+  }
+
+  // Archive a past event (§12a): snapshot its actuals, then land home so the
+  // user can start a fresh plan (and seed it from this one if they like).
+  function archiveCurrent(whatWorked?: string) {
+    const cur = getCurrentPlanState();
+    if (!cur) return;
+    archiveEvent(buildArchivedEvent(cur, whatWorked));
+    setArchiveOpen(false);
+    selectPlan(null);
   }
 
   // Primary-moment module set = always-active + any spawned conditionals in `main`.
@@ -308,6 +323,13 @@ export function PlanView() {
           </div>
         )}
 
+        {dleft < 0 && anyCards && (
+          <div className="archive-banner">
+            <span>This event has passed — capture what worked and archive it for next time.</span>
+            <button className="btn tiny primary" onClick={() => setArchiveOpen(true)}>Archive celebration →</button>
+          </div>
+        )}
+
         <div className="plan-body">
           <div className="plan-main">
             {(anyCards || generatingAll) && renderGroupedBoard(primaryIds, PM, generatingAll)}
@@ -392,6 +414,10 @@ export function PlanView() {
           </div>
         </div>
       </div>
+
+      {archiveOpen && (
+        <ArchiveDialog plan={plan} onArchive={archiveCurrent} onClose={() => setArchiveOpen(false)} />
+      )}
     </div>
   );
 }

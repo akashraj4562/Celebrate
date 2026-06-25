@@ -26,17 +26,20 @@ export interface ChatReply {
   proposal?: ChatProposal;
 }
 
-/** Per-card chat (spec §9): justify / ingest quotes / propose a revision. */
+/** Per-card chat (spec §9): justify / ingest quotes / propose a revision.
+ * `pastEventsIndex` (spec §12a / §11) lets the agent reference the user's prior
+ * celebrations — real vendors + real spend — and reuse them as cost lines. */
 export async function chatModule(
   moduleId: ModuleId,
   planState: PlanState,
   history: ChatMessage[],
   userMessage: string,
+  pastEventsIndex?: string,
 ): Promise<ChatReply> {
   const res = await fetch('/api/module/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ moduleId, planState, history, userMessage }),
+    body: JSON.stringify({ moduleId, planState, history, userMessage, pastEventsIndex }),
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };

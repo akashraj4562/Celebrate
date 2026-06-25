@@ -71,14 +71,20 @@ app.post('/api/module/generate', async (req, res) => {
 
 // Per-card chat agent (spec §9): justify / ingest quotes / propose a revision.
 app.post('/api/module/chat', async (req, res) => {
-  const { moduleId, planState, history, userMessage } = req.body ?? {};
+  const { moduleId, planState, history, userMessage, pastEventsIndex } = req.body ?? {};
   if (!moduleId || !planState?.input || typeof userMessage !== 'string') {
     res.status(400).json({ error: 'moduleId, planState and userMessage are required' });
     return;
   }
   try {
     const t0 = Date.now();
-    const result = await chatModule(anthropic, { moduleId, planState, history: history ?? [], userMessage });
+    const result = await chatModule(anthropic, {
+      moduleId,
+      planState,
+      history: history ?? [],
+      userMessage,
+      pastEventsIndex: typeof pastEventsIndex === 'string' ? pastEventsIndex : undefined,
+    });
     console.log(`[chat] ${moduleId} in ${Date.now() - t0}ms${result.proposal ? ' (proposal)' : ''}`);
     res.json(result);
   } catch (error) {

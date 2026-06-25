@@ -1,51 +1,32 @@
 # Celebrate — Backlog (parked 2026-06-24)
 
-Steps 1–12 are **done, verified, and pushed**. Build order follows spec §14.
-Resume from **Step 13**, which is partially built.
+Steps 1–13 are **done and verified**. Build order follows spec §14.
+Resume from **Step 14** (clothing module + hard URL rule + web search).
 
 ---
 
-## Step 13 — Past-event archive (§12a) · IN PROGRESS
+## Step 13 — Past-event archive (§12a) · DONE
 
 **Goal:** finish an event → snapshot its *actuals* (real vendors + real per-category
 spend, not estimates) into a separate `archivedEvents` collection; surface past
 events when starting a new plan; let per-card chat reference them.
 
-**Done:**
-- `src/engine/archive.ts` — pure engine (NOT yet wired into any UI/route):
-  - `buildArchivedEvent(plan, whatWorked?)` → `ArchivedEvent` (snapshots locked /
-    overridden / quoted-or-actual cards; `totalSpend` = each active card's most-final
-    cost line summed, no double-count).
-  - `archiveFacts(plan)`, `totalSpend(plan)`, `cardCost(d)`, `isFinalized(d)` helpers.
-  - `pastEventsIndex(events)` → compact token-cheap string for the chat agent.
-- Store already has the slots: `archivedEvents`, `archiveEvent(event)`, `removeArchivedEvent(id)`.
-- Types already exist: `ArchivedEvent`, `ArchivedFact`.
-
-**Remaining:**
-1. **Archive action in PlanView** — when `daysLeft(input.date) < 0`, show a calm
-   banner ("This event has passed — capture what worked and archive it"). Opens an
-   **ArchiveDialog** (`src/features/plan/ArchiveDialog.tsx`, new): preview the derived
-   facts (category · detail · cost) + `totalSpend`, a "What worked / what you'd change"
-   textarea, Archive / Cancel. On Archive: `archiveEvent(buildArchivedEvent(plan, note))`
-   then `selectPlan(null)` to land home.
-2. **Home archive surface in Wizard** — a "Past celebrations" panel (only when
-   `archivedEvents.length > 0`) listing type · honorees · date · `totalSpend` · facts ·
-   whatWorked, each with **Plan one like this** (prefills wizard: eventType, honoree
-   names, budget≈totalSpend; date+city stay blank — ArchivedEvent has no city) and a
-   remove (`removeArchivedEvent`). Add a `prefillFrom(event)` to Wizard that calls its
-   existing setters.
-3. **Wire `pastEventsIndex` into chat** (spec §11 body `{…, pastEventsIndex}`):
-   - `src/api.ts` `chatModule(…, pastEventsIndex?)` → include in POST body.
-   - `src/features/plan/PlanView.tsx` `sendChat` → compute from `useStore.getState().archivedEvents` and pass.
-   - `server/index.ts` `/api/module/chat` → accept `pastEventsIndex`.
-   - `server/chat.ts` → thread it into `chatContext` + extend `CHAT_SYSTEM`: may
-     reference past events and propose a past vendor as a `quoted`/`actual` cost line
-     (flows through the normal proposal → Apply → cascade path).
-4. **CSS** — archive dialog (modal overlay), past-celebrations panel, date-passed banner.
-5. **Verify** — `scripts/e2e-archive.mjs` (seed a past-dated plan with locked/quoted
-   cards → Archive → assert ArchivedEvent shape + lands home + panel shows + prefill
-   works) and a tsx unit check for `buildArchivedEvent` / `pastEventsIndex`.
-6. Commit + push; update `project-celebrate` memory (mark step 13 done, next = 14).
+**Shipped:**
+- `src/engine/archive.ts` — pure engine: `buildArchivedEvent`, `archiveFacts`,
+  `totalSpend`, `cardCost`, `isFinalized`, `pastEventsIndex`.
+- `src/features/plan/ArchiveDialog.tsx` — preview of derived facts (category · detail ·
+  cost) + `totalSpend`, "what worked" textarea, Archive / Cancel.
+- `PlanView` — calm date-passed banner (`daysLeft < 0 && anyCards`) opens the dialog;
+  on Archive: `archiveEvent(buildArchivedEvent(plan, note))` then `selectPlan(null)`.
+- `Wizard` — "Past celebrations" panel (when `archivedEvents.length > 0`) with
+  type · honorees · date · spend · facts · whatWorked, **Plan one like this**
+  (`prefillFrom` seeds eventType / honoree names / budget≈spend; date+city blank) and Remove.
+- `pastEventsIndex` threaded into chat: `api.ts` → `server/index.ts` →
+  `server/chat.ts` (`chatContext` + extended `CHAT_SYSTEM`; can propose a past vendor
+  as a quoted/estimated cost line through the normal proposal → Apply path).
+- CSS: archive dialog modal, past-celebrations panel, date-passed banner.
+- Verified: `scripts/unit-archive.ts` (pure-fn, 16 assertions) + `scripts/e2e-archive.mjs`
+  (seeded past-dated plan → Archive → lands home → panel → prefill; no console errors).
 
 ---
 

@@ -66,21 +66,25 @@ You can do exactly THREE things:
 
 3. PROPOSE A REVISION — when you propose a concrete change, set hasProposal=true with the new recommendation, reasoning[], and costLines (basis "estimated" unless taken from a quote). For the VENUE card specifically, if the conclusion is a home / backyard / terrace, set tags:["at-home"]; if the setting becomes outdoor, include "outdoor" plus the time-of-day tag — these drive downstream modules (caterer, weather backup, lighting).
 
+PAST CELEBRATIONS: you may be given the user's prior events with their REAL vendors and REAL spend. Use them to ground recommendations ("last Diwali the cake was Rs.3,200 from …"). If the user wants to reuse a past vendor, propose it as a revision: recommendation = the vendor, and a costLine using the past amount — basis "quoted" (a real amount they actually paid), else "estimated". This flows through the normal proposal → Apply path.
+
 When hasProposal is false, leave proposal fields empty (recommendation: null, [] arrays). Keep replies tight and useful.`;
 
-function chatContext(plan: PlanState, moduleId: ModuleId): string {
+function chatContext(plan: PlanState, moduleId: ModuleId, pastEventsIndex?: string): string {
   const i = plan.input;
   const d =
     plan.deliverables[instanceIdOf(moduleId, PRIMARY_MOMENT_ID)] ??
     Object.values(plan.deliverables).find((x) => x.moduleId === moduleId);
   const headcount = i.cohorts.reduce((n, c) => n + (c.count || 0), 0);
   const honorees = i.honorees.map((h) => `${h.name} (${h.relation}${h.age != null ? `, ${h.age}` : ''})`).join(', ');
+  const past = pastEventsIndex?.trim();
   return [
     `CARD UNDER DISCUSSION: "${MODULES[moduleId].title}".`,
     d ? `Its current recommendation: ${d.recommendation}` : '',
     d && d.reasoning.length ? `Its current reasoning: ${d.reasoning.join(' | ')}` : '',
     '',
     `PLAN: ${i.eventType} for ${honorees}; date ${i.date}; ${i.location.city}; budget Rs.${i.budgetTotal.toLocaleString('en-IN')}; ${headcount} guests${i.exceptions.length ? `; exceptions to respect: ${i.exceptions.map((x) => x.note).join(', ')}` : ''}.`,
+    past ? `\nPAST CELEBRATIONS (real vendors + real spend):\n${past}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -100,9 +104,9 @@ export interface ChatResult {
 
 export async function chatModule(
   client: Anthropic,
-  args: { moduleId: ModuleId; planState: PlanState; history: ChatMessage[]; userMessage: string },
+  args: { moduleId: ModuleId; planState: PlanState; history: ChatMessage[]; userMessage: string; pastEventsIndex?: string },
 ): Promise<ChatResult> {
-  const { moduleId, planState, history, userMessage } = args;
+  const { moduleId, planState, history, userMessage, pastEventsIndex } = args;
   const effort = (process.env.CHAT_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
 
   const message = await client.messages.parse({
@@ -111,7 +115,7 @@ export async function chatModule(
     output_config: { effort, format: zodOutputFormat(ChatSchema) },
     system: [{ type: 'text', text: CHAT_SYSTEM, cache_control: { type: 'ephemeral' } }],
     messages: [
-      { role: 'user', content: chatContext(planState, moduleId) },
+      { role: 'user', content: chatContext(planState, moduleId, pastEventsIndex) },
       ...history.map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: userMessage },
     ],

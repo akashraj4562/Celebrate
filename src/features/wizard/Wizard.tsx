@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type {
+  ArchivedEvent,
   AttendeeCohort,
   AttendeeException,
   EventInput,
@@ -105,6 +106,8 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
 
 export function Wizard() {
   const createPlan = useStore((s) => s.createPlan);
+  const archivedEvents = useStore((s) => s.archivedEvents);
+  const removeArchivedEvent = useStore((s) => s.removeArchivedEvent);
 
   const [eventType, setEventType] = useState('');
   const [eventTypeOther, setEventTypeOther] = useState('');
@@ -172,6 +175,29 @@ export function Wizard() {
     createPlan(`${finalHonorees[0].name}’s ${resolvedType}`, input);
   }
 
+  // Seed the wizard from a past celebration (§12a): event type, honoree names and
+  // a budget ≈ last spend. Date and city stay blank — an archive has no city, and
+  // the date is always new.
+  function prefillFrom(event: ArchivedEvent) {
+    if (EVENT_TYPES.includes(event.eventType)) {
+      setEventType(event.eventType);
+      setEventTypeOther('');
+    } else {
+      setEventType('other');
+      setEventTypeOther(event.eventType);
+    }
+    setHonorees(
+      event.honorees.length
+        ? event.honorees.map((name) => ({ ...newDraft(), name }))
+        : [newDraft()],
+    );
+    setBudget(String(Math.round(event.totalSpend)));
+    setDate('');
+    setCity('');
+    setArea('');
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
     <div className="wizard">
       <div className="container">
@@ -184,6 +210,47 @@ export function Wizard() {
             your mind. The more you tell me, the more specific — and delightful — it gets.
           </p>
         </div>
+
+        {archivedEvents.length > 0 && (
+          <section className="past-panel">
+            <div className="past-head">
+              <h2>Past celebrations</h2>
+              <span className="muted">Plan one like a previous event — its real vendors and spend carry forward.</span>
+            </div>
+            <div className="past-list">
+              {archivedEvents.map((e) => (
+                <div className="past-card" key={e.id}>
+                  <div className="past-card-top">
+                    <div>
+                      <div className="past-title">
+                        {e.eventType} <span className="muted">for {e.honorees.join(' & ')}</span>
+                      </div>
+                      <div className="past-meta">
+                        {new Date(e.date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                        {' · '}₹{Math.round(e.totalSpend).toLocaleString('en-IN')} spent
+                      </div>
+                    </div>
+                    <button className="btn ghost tiny" onClick={() => removeArchivedEvent(e.id)} aria-label="Remove">Remove</button>
+                  </div>
+                  {e.facts.length > 0 && (
+                    <div className="past-facts">
+                      {e.facts.slice(0, 4).map((f, i) => (
+                        <span className="pill" key={i}>
+                          {f.category}{f.actualCost ? ` · ₹${Math.round(f.actualCost).toLocaleString('en-IN')}` : ''}
+                        </span>
+                      ))}
+                      {e.facts.length > 4 && <span className="pill">+{e.facts.length - 4} more</span>}
+                    </div>
+                  )}
+                  {e.whatWorked && <div className="past-note">“{e.whatWorked}”</div>}
+                  <button className="btn tiny primary" style={{ marginTop: 10 }} onClick={() => prefillFrom(e)}>
+                    Plan one like this →
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="wizard-sections">
           {/* 1 · The basics */}
