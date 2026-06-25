@@ -3,6 +3,8 @@ import { Wizard } from './features/wizard/Wizard';
 import { PlanView } from './features/plan/PlanView';
 import { CardDemo } from './features/card/CardDemo';
 import { NocturneFX } from './features/fx/NocturneFX';
+import { BackgroundFX } from './features/fx/BackgroundFX';
+import { ScrollFX } from './features/fx/ScrollFX';
 
 export function App() {
   const plan = useCurrentPlan();
@@ -14,7 +16,9 @@ export function App() {
 
   return (
     <>
+      <BackgroundFX />
       <NocturneFX />
+      <ScrollFX />
       {plan ? <PlanView /> : <Wizard />}
     </>
   );

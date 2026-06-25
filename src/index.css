@@ -79,7 +79,7 @@ body::before {
   content: '';
   position: fixed;
   inset: -22vmax;
-  z-index: -3;
+  z-index: -4;
   pointer-events: none;
   background:
     radial-gradient(38vmax 38vmax at 16% 10%, rgba(255, 77, 141, 0.22), transparent 60%),
@@ -224,7 +224,6 @@ a {
   padding: 24px;
   backdrop-filter: blur(14px) saturate(1.1);
   -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  animation: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .panel > .panel-head {
   margin-bottom: 16px;
