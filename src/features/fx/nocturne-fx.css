@@ -149,22 +149,22 @@
   filter: blur(2.5px); /* frosted-glass softening of the procedural crowd */
 }
 
-/* Rotating double-helix motif with a central spine — a hero background structure. */
-.helix {
+/* Lightning bolt down the centre of the page (the "spine"). */
+.lightning {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: min(50vw, 620px);
+  width: min(38vw, 440px);
   height: 100vh;
   z-index: -4;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.9;
   mix-blend-mode: screen;
 }
 @media (max-width: 900px) {
-  .helix {
+  .lightning {
     display: none;
   }
 }
