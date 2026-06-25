@@ -121,15 +121,52 @@
   }
 }
 
-/* Living WebGL background — sits behind the spotlight/grain, above the CSS aurora fallback. */
-.bg-canvas {
+/* The "dirty fishtank": people layer (video/crowd) under murky WebGL water that
+   the cursor wipes clear. Sits behind the helix, spotlight and grain. */
+.tank {
   position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  overflow: hidden;
+  background: #05060a;
+}
+.tank-video,
+.tank-crowd,
+.tank-water {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: -3;
-  pointer-events: none;
   display: block;
+}
+.tank-video {
+  object-fit: cover;
+  filter: blur(3px) brightness(0.62) saturate(0.85); /* faint people behind glass */
+  transition: opacity 0.8s;
+}
+.tank-crowd {
+  filter: blur(2.5px); /* frosted-glass softening of the procedural crowd */
+}
+
+/* Rotating double-helix motif with a central spine — a hero background structure. */
+.helix {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(50vw, 620px);
+  height: 100vh;
+  z-index: -4;
+  pointer-events: none;
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+@media (max-width: 900px) {
+  .helix {
+    display: none;
+  }
 }
 
 /* Scroll reveal — cards/panels rise + fade as they enter. Pre-reveal state is

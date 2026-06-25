@@ -4,6 +4,7 @@ import { PlanView } from './features/plan/PlanView';
 import { CardDemo } from './features/card/CardDemo';
 import { NocturneFX } from './features/fx/NocturneFX';
 import { BackgroundFX } from './features/fx/BackgroundFX';
+import { Helix } from './features/fx/Helix';
 import { ScrollFX } from './features/fx/ScrollFX';
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
   return (
     <>
       <BackgroundFX />
+      <Helix />
       <NocturneFX />
       <ScrollFX />
       {plan ? <PlanView /> : <Wizard />}

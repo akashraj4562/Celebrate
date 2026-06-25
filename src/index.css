@@ -79,7 +79,7 @@ body::before {
   content: '';
   position: fixed;
   inset: -22vmax;
-  z-index: -4;
+  z-index: -6;
   pointer-events: none;
   background:
     radial-gradient(38vmax 38vmax at 16% 10%, rgba(255, 77, 141, 0.22), transparent 60%),
