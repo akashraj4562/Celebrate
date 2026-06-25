@@ -10,7 +10,14 @@ const BASIS_NEXT: Record<CostBasis, CostBasis> = {
 };
 
 const inr = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
-const cardTotal = (d: Deliverable) => d.costLines.reduce((s, l) => s + (l.amount || 0), 0);
+const sumLines = (ls: CostLine[]) => ls.reduce((s, l) => s + (l.amount || 0), 0);
+// All cost lines that count toward this card's total: its own plus any per-person
+// sub-item lines (clothing, §10).
+const allCostLines = (d: Deliverable): CostLine[] => [
+  ...d.costLines,
+  ...(d.subItems ?? []).flatMap((si) => si.costLines),
+];
+const cardTotal = (d: Deliverable) => sumLines(allCostLines(d));
 
 function basisSummary(lines: CostLine[]): CostBasis | null {
   if (lines.length === 0) return null;
@@ -54,7 +61,7 @@ export function DeliverableCard({ deliverable: d, onPatch, onOverride, onRefresh
   const applyValue = onOverride ?? onPatch; // value changes cascade; falls back to a plain patch
   const badge = topBadge(d);
   const total = cardTotal(d);
-  const summaryBasis = basisSummary(d.costLines);
+  const summaryBasis = basisSummary(allCostLines(d));
 
   function toggleLock() {
     const locked = !d.locked;
@@ -174,6 +181,55 @@ export function DeliverableCard({ deliverable: d, onPatch, onOverride, onRefresh
                   <li key={i}>{r}</li>
                 ))}
               </ul>
+            </>
+          )}
+
+          {d.subItems && d.subItems.length > 0 && (
+            <>
+              <div className="cost-label">Outfits — per person</div>
+              <div className="subcards">
+                {d.subItems.map((si) => {
+                  const sTotal = sumLines(si.costLines);
+                  return (
+                    <div className="subcard" key={si.id}>
+                      <div className="subcard-head">
+                        <div className="subcard-name">{si.personName}</div>
+                        {sTotal > 0 && <div className="subcard-cost">{inr(sTotal)}</div>}
+                      </div>
+                      <div className="subcard-rec">{si.recommendation}</div>
+                      {(si.size || si.styleNotes) && (
+                        <div className="subcard-meta">
+                          {si.size && <span>Size: {si.size}</span>}
+                          {si.styleNotes && <span>{si.styleNotes}</span>}
+                        </div>
+                      )}
+                      {si.reasoning.length > 0 && (
+                        <ul className="subcard-why">
+                          {si.reasoning.map((r, i) => (
+                            <li key={i}>{r}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {si.links && si.links.length > 0 && (
+                        <div className="subcard-links">
+                          {si.links.map((l, i) => (
+                            <a
+                              className={`shop-chip ${l.kind}`}
+                              key={i}
+                              href={l.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {l.label}
+                              {l.kind === 'live' && <span className="live-tag">live</span>}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </>
           )}
 

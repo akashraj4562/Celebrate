@@ -18,7 +18,8 @@ import {
   PRIMARY_MOMENT_ID,
   instanceIdOf,
 } from '../src/types';
-import type { Deliverable, Feasibility, ModuleId, PlanState } from '../src/types';
+import type { Deliverable, Feasibility, Honoree, ModuleId, PlanState, SubDeliverable } from '../src/types';
+import { buildSearchLinks, procurementMode } from '../src/lib/shopping';
 
 // ── Structured-output schema: only the CONTENT the model generates. ──
 const GeneratedSchema = z.object({
@@ -36,6 +37,25 @@ const GeneratedSchema = z.object({
   tags: z.array(z.string()),
   leadTimeDays: z.number(),
   confidence: z.enum(['high', 'low']),
+});
+
+// ── Clothing (§10): per-person outfit sub-cards. The model NEVER emits a URL —
+// it gives a plain `searchQuery`; code builds the deterministic shoppable links. ──
+const ClothingSchema = z.object({
+  recommendation: z.string(), // the overall outfit approach (one headline)
+  reasoning: z.array(z.string()), // why — palette inheritance, occasion, formality
+  confidence: z.enum(['high', 'low']),
+  leadTimeDays: z.number(),
+  people: z.array(
+    z.object({
+      personName: z.string(), // must echo one of the target names given
+      recommendation: z.string(), // this person's outfit
+      reasoning: z.array(z.string()),
+      estimatedCost: z.number(), // INR
+      searchQuery: z.string(), // PLAIN words for a shopping search — NEVER a URL
+      sizeNote: z.string(), // sizing / fit guidance ('' if none)
+    }),
+  ),
 });
 
 // ── The shared scaffold — identical on every call, so it caches. ──
@@ -195,11 +215,100 @@ function buildContext(planState: PlanState, moduleId: ModuleId): string {
     .join('\n');
 }
 
+// The people clothing dresses: the innerCircle (§10), falling back to honorees.
+function targetPeople(plan: PlanState): Honoree[] {
+  return plan.input.innerCircle.length ? plan.input.innerCircle : plan.input.honorees;
+}
+
+// Clothing (§10): per-person outfit sub-cards with code-built shoppable links.
+async function generateClothing(client: Anthropic, planState: PlanState): Promise<Deliverable> {
+  const i = planState.input;
+  const people = targetPeople(planState);
+  const dleft = daysLeft(i.date);
+  const proc = procurementMode(dleft);
+
+  const peopleBlock = people.length
+    ? people
+        .map((h) => {
+          const bits = [`${h.name} (${h.relation}${h.age != null ? `, ${h.age}` : ''})`];
+          if (h.styleNotes) bits.push(`style: ${h.styleNotes}`);
+          if (h.size) bits.push(`size: ${h.size}`);
+          return '- ' + bits.join('; ');
+        })
+        .join('\n')
+    : '- (no inner circle specified — dress the honoree)';
+
+  const job = `MODULE: Outfits to Buy (clothing).
+For EACH person below, recommend ONE outfit that INHERITS the dress code's palette and formality (see UPSTREAM DECISIONS) so the family harmonises, and suits the occasion, the person's relation/age, and any style/size note. Per person give: the outfit, 2-3 reasoning points in the voice above, an India-realistic INR estimatedCost for the city tier, a sizeNote, and a PLAIN-WORDS searchQuery for a shopping search (colour + garment + who it's for, e.g. "emerald green silk saree" or "navy bandhgala men").
+HARD RULE: NEVER output a URL or a store/product link in ANY field — the app builds the shopping links from your searchQuery. A link you write would 404.
+PROCUREMENT WINDOW — ${proc.note} Reflect this in the picks (with little time, lean ready-to-wear over custom-stitched, and say so).
+Set leadTimeDays for the module to when outfits must be actioned. The card itself has no direct cost line — the per-person costs ARE the cost.
+
+TARGET PEOPLE (echo each personName EXACTLY as written):
+${peopleBlock}`;
+
+  const userPrompt = `${job}\n\n${buildContext(planState, 'clothing')}`;
+  const effort = (process.env.GENERATE_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
+  const message = await client.messages.parse({
+    model: process.env.MODEL_GENERATE ?? 'claude-sonnet-4-6',
+    max_tokens: 3000,
+    system: [{ type: 'text', text: SYSTEM_SCAFFOLD, cache_control: { type: 'ephemeral' } }],
+    output_config: { effort, format: zodOutputFormat(ClothingSchema) },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+  const gen = message.parsed_output;
+  if (!gen) throw new Error('generation for clothing returned no structured output');
+
+  const byName = new Map(people.map((h) => [h.name.trim().toLowerCase(), h]));
+  const subItems: SubDeliverable[] = gen.people.map((p) => {
+    const match = byName.get(p.personName.trim().toLowerCase());
+    return {
+      id: randomUUID().slice(0, 8),
+      personId: match?.id ?? randomUUID().slice(0, 8),
+      personName: match?.name ?? p.personName,
+      recommendation: p.recommendation,
+      reasoning: p.reasoning,
+      costLines:
+        p.estimatedCost > 0
+          ? [{ id: randomUUID().slice(0, 8), label: p.recommendation, amount: p.estimatedCost, basis: 'estimated' as const }]
+          : [],
+      links: buildSearchLinks(p.searchQuery), // code-built; the model never supplies URLs
+      ...(p.sizeNote || match?.size ? { size: p.sizeNote || match?.size } : {}),
+      ...(match?.styleNotes ? { styleNotes: match.styleNotes } : {}),
+      status: 'suggested',
+      locked: false,
+      chat: [],
+    };
+  });
+
+  return {
+    instanceId: instanceIdOf('clothing', PRIMARY_MOMENT_ID),
+    moduleId: 'clothing',
+    momentId: PRIMARY_MOMENT_ID,
+    title: MODULES.clothing.title,
+    recommendation: gen.recommendation,
+    reasoning: [proc.note, ...gen.reasoning], // card STATES the procurement mode (§10)
+    alternatives: [],
+    costLines: [], // cost lives on the per-person sub-items
+    leadTimeDays: gen.leadTimeDays,
+    status: 'suggested',
+    feasibility: feasibilityFor(dleft, gen.leadTimeDays),
+    confidence: gen.confidence,
+    stale: false,
+    active: true,
+    locked: false,
+    chat: [],
+    tags: [],
+    subItems,
+  };
+}
+
 export async function generateDeliverable(
   client: Anthropic,
   moduleId: ModuleId,
   planState: PlanState,
 ): Promise<Deliverable> {
+  if (moduleId === 'clothing') return generateClothing(client, planState);
   const meta = MODULES[moduleId];
   const job = MODULE_JOBS[moduleId] ?? `MODULE: ${meta.title}. Recommend the single best option for this module given the context, in the reasoning voice above.`;
   const userPrompt = `${job}\n\n${buildContext(planState, moduleId)}`;

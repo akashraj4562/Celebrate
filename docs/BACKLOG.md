@@ -50,14 +50,26 @@ events when starting a new plan; let per-card chat reference them.
 ---
 
 ## Step 14 — Clothing/outfits module + hard URL rule + web search (§10, §11)
-- `clothing` module renders **per-person sub-cards** (`SubDeliverable`) for the
-  `innerCircle`, each with outfit recommendation, size/style notes, cost.
-- **Hard rule (spec §10):** the LLM must NEVER invent product SKU URLs (they 404).
-  Shoppable links only two ways: (a) **always** deterministic search-query URLs built
-  in code from the outfit spec (Myntra/Ajio/Amazon search deep-links — `ShoppableLink`
-  kind `'search'`); (b) **optionally** real results from server-side `web_search_20260209`
-  (kind `'live'`, two-step: search call → structured call), labelled "live".
-- Card UI: per-person sub-cards with the link chips; `subItems` already in the type.
+
+**Layer A — deterministic core · DONE (PR: feat/step-14-clothing):**
+- `src/lib/shopping.ts` — `buildSearchLinks(query)` → Myntra/Ajio/Flipkart `ShoppableLink`
+  kind `'search'` (query-built, strips any leaked URL); `procurementMode(daysLeft)`.
+- `server/generate.ts` — `clothing` branch: per-person `SubDeliverable[]` from the
+  `innerCircle` (falls back to honorees), dress-code palette inheritance via the
+  upstream block, model emits a PLAIN `searchQuery` (never a URL) → code builds links;
+  card reasoning leads with the procurement-mode line. Cost lives on the sub-items
+  (budget engine already sums `subItems`).
+- `DeliverableCard` — per-person sub-cards (outfit, cost, size/style, reasoning, link
+  chips); `cardTotal`/`basisSummary` include sub-item lines. `card.css` for sub-cards + chips.
+- Verified: `scripts/unit-shopping.ts` (links + SKU-strip + mode) + `scripts/e2e-clothing.mjs`
+  (seeded sub-cards render, total sums, hrefs are real search URLs, no fabricated SKU).
+
+**Layer B — live web search · REMAINING:**
+- Server-side `web_search_20260209` (Sonnet 4.6 / Opus: dynamic filtering built-in — do
+  NOT also declare `code_execution`). Two-step: search call → structured extraction of
+  2-3 real results → `ShoppableLink` kind `'live'` with `imageUrl` only when search
+  returns one. Label chips "live — verify availability". Best-effort / behind a flag so
+  generation degrades gracefully without it. The `'live'` chip rendering already exists.
 
 ## Step 15 — Persistence: export/import + multiple plans (§12)
 - Store already has `importPlan` / `exportCurrent` / multi-plan map. Build the UI:

@@ -392,3 +392,95 @@
   0%, 100% { opacity: 0.45; }
   50% { opacity: 1; }
 }
+
+/* ── clothing per-person sub-cards (§10) ───────────────────────────────────── */
+.subcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 6px;
+}
+.subcard {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  padding: 12px 13px;
+}
+.subcard-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.subcard-name {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.subcard-cost {
+  font-family: var(--serif);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.subcard-rec {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 4px;
+}
+.subcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.subcard-why {
+  margin: 7px 0 0;
+  padding-left: 16px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.subcard-why li {
+  margin-bottom: 2px;
+}
+.subcard-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.shop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--accent-ink);
+  transition: all 0.12s;
+}
+.shop-chip:hover {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.shop-chip.live {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.shop-chip .live-tag {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 0 4px;
+}
