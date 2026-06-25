@@ -23,7 +23,6 @@ export function NocturneFX() {
 
     if (reduce || !fine) return () => window.clearTimeout(introTimer);
 
-    const root = document.documentElement;
     const dot = document.createElement('div');
     const ring = document.createElement('div');
     dot.className = 'cursor-dot';
@@ -43,8 +42,6 @@ export function NocturneFX() {
     const onMove = (e: PointerEvent) => {
       tx = e.clientX;
       ty = e.clientY;
-      root.style.setProperty('--mx', `${tx}px`);
-      root.style.setProperty('--my', `${ty}px`);
       dot.style.transform = `translate(${tx}px, ${ty}px)`;
       const hot = !!(e.target as Element | null)?.closest?.(HOVER);
       document.body.classList.toggle('cursor-hot', hot);
@@ -75,14 +72,9 @@ export function NocturneFX() {
     };
   }, []);
 
-  return (
-    <>
-      <div className="cursor-glow" aria-hidden="true" />
-      {intro && (
-        <div className="intro" aria-hidden="true">
-          <span className="intro-word grad-text">Celebrate</span>
-        </div>
-      )}
-    </>
-  );
+  return intro ? (
+    <div className="intro" aria-hidden="true">
+      <span className="intro-word grad-text">Celebrate</span>
+    </div>
+  ) : null;
 }

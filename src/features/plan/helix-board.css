@@ -34,6 +34,13 @@
 }
 .helix-item > .card {
   width: 340px;
+  /* backdrop-filter on a card that's being 3D-transformed every frame is the
+     single most expensive thing here — drop the glass blur in the helix and use
+     a solid surface instead. */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(14, 14, 22, 0.94);
+  will-change: transform;
 }
 /* the rotor controls helix-card visibility — keep the scroll-reveal layer from
    pre-hiding them. */

@@ -46,15 +46,15 @@ export function LightningSpine() {
     const start = performance.now();
     let raf = 0;
 
-    const seg = (x1: number, y1: number, x2: number, y2: number, width: number, color: string, blur: number) => {
+    // No shadowBlur — it's a per-frame paint killer. The layered wide→narrow
+    // low-alpha passes give the glow far more cheaply.
+    const seg = (x1: number, y1: number, x2: number, y2: number, width: number, color: string) => {
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.lineWidth = width;
       ctx.strokeStyle = color;
       ctx.lineCap = 'round';
-      ctx.shadowColor = color;
-      ctx.shadowBlur = blur;
       ctx.stroke();
     };
 
@@ -91,21 +91,26 @@ export function LightningSpine() {
         const headBoost = Math.exp(-Math.pow((my - headY) / (H * 0.05), 2)); // gaussian at head
         const bright = Math.min(1, lit + headBoost);
         if (bright < 0.04) continue;
-        seg(a.x, a.y, b.x, b.y, 70, `rgba(110,160,255,${(0.05 * bright).toFixed(3)})`, 55);
-        seg(a.x, a.y, b.x, b.y, 30, `rgba(150,195,255,${(0.14 * bright).toFixed(3)})`, 34);
-        seg(a.x, a.y, b.x, b.y, 12, `rgba(150,120,255,${(0.42 * bright).toFixed(3)})`, 20);
-        seg(a.x, a.y, b.x, b.y, 5, `rgba(235,242,255,${(0.9 * bright).toFixed(3)})`, 12);
+        seg(a.x, a.y, b.x, b.y, 72, `rgba(110,160,255,${(0.05 * bright).toFixed(3)})`);
+        seg(a.x, a.y, b.x, b.y, 40, `rgba(130,175,255,${(0.08 * bright).toFixed(3)})`);
+        seg(a.x, a.y, b.x, b.y, 20, `rgba(150,195,255,${(0.16 * bright).toFixed(3)})`);
+        seg(a.x, a.y, b.x, b.y, 9, `rgba(160,140,255,${(0.4 * bright).toFixed(3)})`);
+        seg(a.x, a.y, b.x, b.y, 4, `rgba(235,242,255,${(0.92 * bright).toFixed(3)})`);
       }
 
       // the blazing strike head — a bright node + pulse where you are on the page
       const pulse = 0.8 + 0.2 * Math.sin(t * 6);
-      ctx.shadowColor = 'rgba(180,210,255,1)';
-      ctx.shadowBlur = 55 * pulse;
-      ctx.fillStyle = `rgba(240,246,255,${0.9 * pulse})`;
-      ctx.beginPath();
-      ctx.arc(headX, headY, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      const halo: [number, string][] = [
+        [34 * pulse, `rgba(150,190,255,${0.1 * pulse})`],
+        [18 * pulse, `rgba(180,210,255,${0.22 * pulse})`],
+        [9, `rgba(235,244,255,${0.95 * pulse})`],
+      ];
+      for (const [r, col] of halo) {
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(headX, headY, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       if (!reduce) raf = requestAnimationFrame(draw);
     };

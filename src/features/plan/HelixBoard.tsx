@@ -37,8 +37,9 @@ export function HelixBoard({ items }: { items: ReactNode[] }) {
         const el = cards[i] as HTMLElement;
         const facing = Math.cos(((i - idx) * ANGLE * Math.PI) / 180); // 1 front, -1 back
         const f = Math.max(0, facing);
-        el.style.opacity = (0.12 + 0.88 * f).toFixed(2);
-        el.style.filter = facing > 0.25 ? 'none' : 'blur(1.5px)';
+        // opacity + pointer-events only — both compositor-cheap. (No per-card
+        // blur(): filters force a repaint of every card every scroll frame.)
+        el.style.opacity = (0.1 + 0.9 * f).toFixed(2);
         el.style.pointerEvents = facing > 0.65 ? 'auto' : 'none';
         el.style.zIndex = String(Math.round(facing * 100) + 100);
       }

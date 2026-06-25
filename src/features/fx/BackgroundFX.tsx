@@ -25,7 +25,7 @@ float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); retur
 float noise(vec2 p){ vec2 i=floor(p),f=fract(p);
   float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));
   vec2 u=f*f*(3.-2.*f); return mix(mix(a,b,u.x),mix(c,d,u.x),u.y); }
-float fbm(vec2 p){ float v=0.,a=.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.02; a*=.5; } return v; }
+float fbm(vec2 p){ float v=0.,a=.5; for(int i=0;i<4;i++){ v+=a*noise(p); p*=2.02; a*=.5; } return v; }
 
 void main(){
   vec2 uv = gl_FragCoord.xy/u_res.xy;
@@ -116,7 +116,7 @@ export function BackgroundFX() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = 1; // crowd is soft/blurred — 1x is plenty
     const resize = () => {
       canvas.width = Math.floor(window.innerWidth * dpr);
       canvas.height = Math.floor(window.innerHeight * dpr);
@@ -173,7 +173,7 @@ export function BackgroundFX() {
     const uMouse = gl.getUniformLocation(prog, 'u_mouse');
     const uTrail = gl.getUniformLocation(prog, 'u_trail');
     const uCount = gl.getUniformLocation(prog, 'u_count');
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.4);
+    const dpr = 0.6; // render the abstract water at low res — big GPU win, invisible blur
 
     const resize = () => {
       canvas.width = Math.floor(window.innerWidth * dpr);
@@ -222,8 +222,13 @@ export function BackgroundFX() {
     if (reduce) {
       draw();
     } else {
-      const loop = () => {
-        draw();
+      let last = 0;
+      const loop = (now: number) => {
+        if (now - last >= 33) {
+          // ~30fps — plenty for slow water, half the GPU + backdrop-filter churn
+          last = now;
+          draw();
+        }
         raf = requestAnimationFrame(loop);
       };
       raf = requestAnimationFrame(loop);
