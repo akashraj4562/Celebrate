@@ -1,8 +1,9 @@
 // ── src/features/fx/LightningSpine.tsx ──────────────────────────────────────
-// A glowing lightning bolt running down the centre of the page (replaces the
-// helix "spine", per the owner's reference). A jagged vertical path that morphs
-// continuously, drawn in glow passes (wide soft → core bright) with a gentle
-// flicker. Pure 2D canvas; a single calm frame under reduced-motion.
+// A lightning bolt down the centre of the page whose energy DESCENDS WITH SCROLL.
+// A blazing "strike head" sits at your scroll position; the bolt above it is a lit
+// trail (where you've descended from), the bolt below is dim and not-yet-struck.
+// Scrolling down moves the head down — the feeling of descending the bolt.
+// Pure 2D canvas; calm static head at top under reduced-motion.
 
 import { useEffect, useRef } from 'react';
 
@@ -30,18 +31,28 @@ export function LightningSpine() {
     resize();
     window.addEventListener('resize', resize);
 
-    const SEGS = 30;
+    // scroll progress 0..1, eased so the head lags slightly behind the scroll
+    let targetP = 0;
+    let p = 0;
+    const onScroll = () => {
+      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      targetP = Math.min(1, Math.max(0, window.scrollY / max));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+
+    const SEGS = 34;
     const start = performance.now();
     let raf = 0;
 
-    const path = (pts: { x: number; y: number }[], width: number, color: string, blur: number) => {
+    const seg = (x1: number, y1: number, x2: number, y2: number, width: number, color: string, blur: number) => {
       ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
       ctx.lineWidth = width;
       ctx.strokeStyle = color;
       ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
       ctx.shadowColor = color;
       ctx.shadowBlur = blur;
       ctx.stroke();
@@ -49,27 +60,51 @@ export function LightningSpine() {
 
     const draw = () => {
       const t = (performance.now() - start) / 1000;
+      p += (targetP - p) * 0.08; // ease toward scroll position
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2;
+      const headY = p * H;
 
-      // jagged, continuously-morphing bolt path
+      // jagged, slowly-morphing bolt points
       const pts: { x: number; y: number }[] = [];
       for (let i = 0; i <= SEGS; i++) {
         const v = i / SEGS;
         const y = v * H;
-        const drift = Math.sin(y * 0.008 + t * 0.9) * W * 0.05;
-        const jag =
-          (Math.sin(i * 1.7 + t * 2.2) * 0.55 + Math.sin(i * 0.9 - t * 1.4) * 0.45) * W * 0.16;
+        const drift = Math.sin(y * 0.008 + t * 0.5) * W * 0.05;
+        const jag = (Math.sin(i * 1.7 + t * 1.1) * 0.55 + Math.sin(i * 0.9 - t * 0.7) * 0.45) * W * 0.16;
         pts.push({ x: cx + drift + jag, y });
       }
 
-      // gentle flicker (smooth, non-strobing) with rare brighter flashes
-      const flash = 0.62 + 0.18 * Math.sin(t * 5.0) + 0.12 * Math.sin(t * 17.0);
+      // x position of the strike head along the bolt
+      const hi = Math.min(SEGS, Math.floor(p * SEGS));
+      const headX = pts[hi].x;
 
-      path(pts, 16, `rgba(110,160,255,${0.07 * flash})`, 26); // wide halo
-      path(pts, 7, `rgba(150,195,255,${0.16 * flash})`, 16); // mid glow
-      path(pts, 2.2, `rgba(150,120,255,${0.5 * flash})`, 12); // violet edge
-      path(pts, 1.2, `rgba(235,242,255,${0.92 * flash})`, 8); // white core
+      // draw each segment with brightness from its relation to the head
+      for (let i = 0; i < SEGS; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        const my = (a.y + b.y) / 2;
+        const d = (my - headY) / H; // <0 above head (descended), >0 below (un-struck)
+        let lit: number;
+        if (d > 0) lit = Math.max(0, 1 - d * 7) * 0.22; // ahead: dim, fast falloff
+        else lit = Math.max(0.12, 1 + d * 1.4); // behind: lit trail, slow fade
+        const headBoost = Math.exp(-Math.pow((my - headY) / (H * 0.05), 2)); // gaussian at head
+        const bright = Math.min(1, lit + headBoost);
+        if (bright < 0.04) continue;
+        seg(a.x, a.y, b.x, b.y, 14, `rgba(110,160,255,${(0.06 * bright).toFixed(3)})`, 24);
+        seg(a.x, a.y, b.x, b.y, 6, `rgba(150,195,255,${(0.16 * bright).toFixed(3)})`, 14);
+        seg(a.x, a.y, b.x, b.y, 2, `rgba(150,120,255,${(0.45 * bright).toFixed(3)})`, 10);
+        seg(a.x, a.y, b.x, b.y, 1, `rgba(235,242,255,${(0.85 * bright).toFixed(3)})`, 7);
+      }
+
+      // the blazing strike head — a bright node + pulse where you are on the page
+      const pulse = 0.8 + 0.2 * Math.sin(t * 6);
+      ctx.shadowColor = 'rgba(180,210,255,1)';
+      ctx.shadowBlur = 30 * pulse;
+      ctx.fillStyle = `rgba(240,246,255,${0.9 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(headX, headY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
       ctx.shadowBlur = 0;
 
       if (!reduce) raf = requestAnimationFrame(draw);
@@ -79,6 +114,8 @@ export function LightningSpine() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
     };
   }, []);
 
