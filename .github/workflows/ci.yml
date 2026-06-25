@@ -1,0 +1,78 @@
+name: CI
+
+# Runs on every PR and on pushes to main. No secrets required: typecheck, build,
+# the pure-function unit checks, and the seeded-localStorage Playwright e2e (which
+# never call the model API). Model-dependent e2e (generate / chat / generate-all)
+# are skipped here — they need ANTHROPIC_API_KEY and incur cost.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR branch).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck (client + server)
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit checks (pure functions)
+        run: |
+          shopt -s nullglob
+          ran=0
+          for f in scripts/unit-*.ts; do
+            echo "▶ $f"
+            npx tsx "$f"
+            ran=1
+          done
+          [ "$ran" = 1 ] || echo "(no scripts/unit-*.ts present yet — skipping)"
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (seeded localStorage — no API key)
+        run: |
+          shopt -s nullglob
+          npm run dev:web &
+          server_pid=$!
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:5200 && break
+            sleep 1
+          done
+          status=0
+          for f in scripts/e2e-*.mjs; do
+            case "$f" in
+              *e2e-generate*|*e2e-chat*) echo "↷ skip $f (needs ANTHROPIC_API_KEY)"; continue ;;
+            esac
+            echo "▶ $f"
+            node "$f" || status=1
+          done
+          kill "$server_pid" 2>/dev/null || true
+          exit $status
+
+      - name: Upload production build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: ignore
