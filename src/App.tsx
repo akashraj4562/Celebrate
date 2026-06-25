@@ -4,7 +4,6 @@ import { PlanView } from './features/plan/PlanView';
 import { CardDemo } from './features/card/CardDemo';
 import { NocturneFX } from './features/fx/NocturneFX';
 import { BackgroundFX } from './features/fx/BackgroundFX';
-import { Waterfall } from './features/fx/Waterfall';
 import { LightningSpine } from './features/fx/LightningSpine';
 import { ScrollFX } from './features/fx/ScrollFX';
 
@@ -19,7 +18,6 @@ export function App() {
   return (
     <>
       <BackgroundFX />
-      <Waterfall />
       <LightningSpine />
       <NocturneFX />
       <ScrollFX />

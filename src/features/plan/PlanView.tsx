@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { getCurrentPlanState, useCurrentPlan, useStore } from '../../store';
 import { daysLeft } from '../../lib/plan';
 import { chatModule, generateModule, type ChatProposal } from '../../api';
@@ -8,6 +8,7 @@ import { ALWAYS_ACTIVE_IDS, GROUP_LABEL, GROUP_ORDER, MODULES } from '../../modu
 import { PRIMARY_MOMENT_ID, instanceIdOf, type ModuleId } from '../../types';
 import { activate } from '../../engine/activation';
 import { PlanRail, type RailTab } from './PlanRail';
+import { HelixBoard } from './HelixBoard';
 import './planview.css';
 
 export function PlanView() {
@@ -228,6 +229,23 @@ export function PlanView() {
   const primaryIds: ModuleId[] = [...new Set<ModuleId>([...ALWAYS_ACTIVE_IDS, ...primaryConditionalIds])];
   const otherMoments = plan.moments.filter((m) => !m.isPrimary);
 
+  // The generated primary cards, as helix items (kept real + interactive).
+  const primaryHelixItems: ReactNode[] = [];
+  for (const id of primaryIds) {
+    const inst = plan.deliverables[instanceIdOf(id, PM)];
+    if (!inst) continue;
+    primaryHelixItems.push(
+      <DeliverableCard
+        key={inst.instanceId}
+        deliverable={inst}
+        onPatch={(p) => patchDeliverable(inst.instanceId, p)}
+        onOverride={(p) => overrideDeliverable(inst.instanceId, p)}
+        onRefresh={() => regen(id)}
+        onDiscuss={() => discuss(inst.instanceId)}
+      />,
+    );
+  }
+
   const renderGroupedBoard = (moduleIds: ModuleId[], momentId: string, withSkeletons: boolean) =>
     GROUP_ORDER.map((g) => {
       const ids = moduleIds.filter((id) => MODULES[id].group === g);
@@ -308,9 +326,16 @@ export function PlanView() {
           </div>
         )}
 
+        {!generatingAll && anyCards && (
+          <>
+            <div className="helix-hint">Scroll — the board spins</div>
+            <HelixBoard items={primaryHelixItems} />
+          </>
+        )}
+
         <div className="plan-body">
           <div className="plan-main">
-            {(anyCards || generatingAll) && renderGroupedBoard(primaryIds, PM, generatingAll)}
+            {generatingAll && renderGroupedBoard(primaryIds, PM, true)}
 
         {otherMoments.map((m) => {
           const ids = Object.values(plan.deliverables)

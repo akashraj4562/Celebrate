@@ -91,19 +91,19 @@ export function LightningSpine() {
         const headBoost = Math.exp(-Math.pow((my - headY) / (H * 0.05), 2)); // gaussian at head
         const bright = Math.min(1, lit + headBoost);
         if (bright < 0.04) continue;
-        seg(a.x, a.y, b.x, b.y, 14, `rgba(110,160,255,${(0.06 * bright).toFixed(3)})`, 24);
-        seg(a.x, a.y, b.x, b.y, 6, `rgba(150,195,255,${(0.16 * bright).toFixed(3)})`, 14);
-        seg(a.x, a.y, b.x, b.y, 2, `rgba(150,120,255,${(0.45 * bright).toFixed(3)})`, 10);
-        seg(a.x, a.y, b.x, b.y, 1, `rgba(235,242,255,${(0.85 * bright).toFixed(3)})`, 7);
+        seg(a.x, a.y, b.x, b.y, 70, `rgba(110,160,255,${(0.05 * bright).toFixed(3)})`, 55);
+        seg(a.x, a.y, b.x, b.y, 30, `rgba(150,195,255,${(0.14 * bright).toFixed(3)})`, 34);
+        seg(a.x, a.y, b.x, b.y, 12, `rgba(150,120,255,${(0.42 * bright).toFixed(3)})`, 20);
+        seg(a.x, a.y, b.x, b.y, 5, `rgba(235,242,255,${(0.9 * bright).toFixed(3)})`, 12);
       }
 
       // the blazing strike head — a bright node + pulse where you are on the page
       const pulse = 0.8 + 0.2 * Math.sin(t * 6);
       ctx.shadowColor = 'rgba(180,210,255,1)';
-      ctx.shadowBlur = 30 * pulse;
+      ctx.shadowBlur = 55 * pulse;
       ctx.fillStyle = `rgba(240,246,255,${0.9 * pulse})`;
       ctx.beginPath();
-      ctx.arc(headX, headY, 3.5, 0, Math.PI * 2);
+      ctx.arc(headX, headY, 9, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 

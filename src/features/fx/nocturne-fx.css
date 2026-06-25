@@ -149,67 +149,14 @@
   filter: blur(2.5px); /* frosted-glass softening of the procedural crowd */
 }
 
-/* Real waterfall photo (narrow centre column) descending into a real full-width
-   lake photo, both colour-normalized to the Nocturne palette. */
-.waterfall-scene {
-  position: fixed;
-  inset: 0;
-  z-index: -4;
-  pointer-events: none;
-}
-.wf-fall {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(20vw, 250px);
-  background: url('/waterfall.jpg') center top / cover no-repeat;
-  filter: brightness(0.92) contrast(1.18) saturate(0.62);
-  mix-blend-mode: screen; /* bright cascade glows; dark rock/forest drops into the night */
-  opacity: 0.92;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent),
-    linear-gradient(to bottom, #000 0, #000 calc(var(--reach, 0.6) * 100%), transparent calc(var(--reach, 0.6) * 100% + 10%));
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent),
-    linear-gradient(to bottom, #000 0, #000 calc(var(--reach, 0.6) * 100%), transparent calc(var(--reach, 0.6) * 100% + 10%));
-  mask-composite: intersect;
-  animation: wf-flow 7s linear infinite; /* gentle downward flow */
-}
-@keyframes wf-flow {
-  from {
-    background-position: center 0%;
-  }
-  to {
-    background-position: center 12%;
-  }
-}
-.wf-lake {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: min(34vh, 300px);
-  background: url('/lake.jpg') center / cover no-repeat;
-  filter: brightness(0.58) contrast(1.06) saturate(0.7) hue-rotate(6deg);
-  opacity: var(--lake, 0);
-  transition: opacity 0.35s;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 48%);
-  mask-image: linear-gradient(to bottom, transparent, #000 48%);
-}
-@media (max-width: 900px) {
-  .waterfall-scene {
-    display: none;
-  }
-}
-
-/* Lightning bolt — moved to the right edge; strike head still descends with scroll. */
+/* Lightning bolt down the centre of the page; strike head descends with scroll. */
 .lightning {
   position: fixed;
   top: 0;
   bottom: 0;
-  right: 0;
-  width: min(26vw, 320px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(40vw, 460px);
   height: 100vh;
   z-index: -4;
   pointer-events: none;
@@ -217,8 +164,7 @@
   mix-blend-mode: screen;
 }
 @media (max-width: 900px) {
-  .lightning,
-  .waterfall {
+  .lightning {
     display: none;
   }
 }

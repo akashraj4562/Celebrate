@@ -1,0 +1,93 @@
+/* ── Helical scrolling board ────────────────────────────────────────────────── */
+/* A tall wrapper gives the scroll room; a sticky stage holds the 3D rotor that
+   spins the cards around the centre as you scroll. */
+
+.helix-wrap {
+  position: relative;
+  z-index: 1;
+}
+.helix-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  perspective: 1700px;
+  perspective-origin: 50% 44%;
+  overflow: visible;
+}
+.helix-rotor {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.helix-item {
+  position: absolute;
+  width: 340px;
+  left: -170px;
+  top: -130px;
+  transform-style: preserve-3d;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+.helix-item > .card {
+  width: 340px;
+}
+/* the rotor controls helix-card visibility — keep the scroll-reveal layer from
+   pre-hiding them. */
+body.nfx-ready .helix-item .card:not(.nfx-in) {
+  opacity: 1;
+  transform: none;
+}
+
+/* a hint chip telling the user the board spins on scroll */
+.helix-hint {
+  position: sticky;
+  top: 16px;
+  z-index: 5;
+  width: max-content;
+  margin: 0 auto;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(10, 10, 18, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no 3D spin — fall back to a readable stacked column */
+  .helix-wrap {
+    height: auto !important;
+  }
+  .helix-stage {
+    position: static;
+    height: auto;
+    perspective: none;
+    padding: 20px 0;
+  }
+  .helix-rotor {
+    width: auto;
+    height: auto;
+    transform: none !important;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+  .helix-item {
+    position: static;
+    width: 360px;
+    left: auto;
+    top: auto;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+}
