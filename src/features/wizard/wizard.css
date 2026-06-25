@@ -17,11 +17,12 @@
   margin: 0;
 }
 .wizard-hero .kicker {
-  font-size: 0.78rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-ink);
   margin-bottom: 14px;
 }
 
@@ -115,10 +116,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 253, 248, 0.92);
-  backdrop-filter: saturate(1.2) blur(8px);
+  background: rgba(10, 10, 18, 0.8);
+  backdrop-filter: saturate(1.2) blur(14px);
+  -webkit-backdrop-filter: saturate(1.2) blur(14px);
   border-top: 1px solid var(--line);
-  box-shadow: 0 -8px 24px rgba(33, 31, 26, 0.06);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
 }
 .create-bar .inner {
   max-width: var(--maxw);

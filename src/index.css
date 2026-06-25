@@ -1,37 +1,55 @@
-/* ── Celebrate design system — calm editorial / warm paper ──────────────────── */
+/* ── Celebrate design system — "Nocturne": dark · kinetic · luminous ─────────── */
+/* Inspired by activetheory.net — a near-black immersive canvas, bold grotesk
+   display type with mono micro-labels, vivid gradient accents that glow, a
+   drifting aurora + fine grain behind everything, and motion as a first-class
+   material. See docs/DESIGN-LANGUAGE.md. */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* warm paper palette */
-  --paper: #f6f2ea;
-  --paper-2: #efe9dc;
-  --card: #fffdf8;
-  --ink: #211f1a;
-  --ink-soft: #4f4a40;
-  --muted: #8c8678;
-  --line: #e6dfce;
-  --line-strong: #d8cfb8;
+  /* canvas + glass surfaces */
+  --bg: #07070c;
+  --bg-2: #0c0c14;
+  --paper: rgba(255, 255, 255, 0.045); /* subtle surface: inputs, seg, pills */
+  --paper-2: rgba(255, 255, 255, 0.085); /* hover / alt rows */
+  --card: rgba(17, 17, 26, 0.64); /* glass panels & cards (over the aurora) */
 
-  /* one restrained accent (deep pine) + a sparing terracotta highlight */
-  --accent: #0f6b5f;
-  --accent-ink: #0a4f45;
-  --accent-tint: #e6efeb;
-  --terracotta: #b4502f;
-  --terracotta-tint: #f6e8e1;
+  /* ink */
+  --ink: #f2f1f8;
+  --ink-soft: #b6b6c8;
+  --muted: #76768c;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.2);
 
-  --ok: #2f7d5b;
-  --ok-tint: #e7f1ea;
-  --warn: #9a4a1f;
-  --warn-tint: #f6e8df;
+  /* luminous celebration accent — electric violet, with a magenta→violet→cyan grad */
+  --accent: #7b6bff;
+  --accent-ink: #aea2ff; /* lighter for text/links on dark */
+  --accent-tint: rgba(123, 107, 255, 0.16);
+  --accent-glow: rgba(123, 107, 255, 0.5);
+  --grad: linear-gradient(115deg, #ff5d8f 0%, #7b6bff 50%, #36e0ff 100%);
 
-  --shadow-sm: 0 1px 2px rgba(33, 31, 26, 0.05);
-  --shadow: 0 1px 2px rgba(33, 31, 26, 0.04), 0 10px 28px rgba(33, 31, 26, 0.07);
+  /* festive coral highlight */
+  --terracotta: #ff7a59;
+  --terracotta-tint: rgba(255, 122, 89, 0.15);
+
+  --ok: #2ee6a6;
+  --ok-tint: rgba(46, 230, 166, 0.15);
+  --warn: #ffb84d;
+  --warn-tint: rgba(255, 184, 77, 0.15);
+  --danger: #ff5d7a;
+  --danger-tint: rgba(255, 93, 122, 0.15);
+
+  /* depth = shadow + glow on dark */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 22px 60px rgba(0, 0, 0, 0.55);
   --radius: 14px;
   --radius-sm: 9px;
 
-  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* type — bold grotesk display + mono micro-labels */
+  --display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --serif: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; /* repointed: legacy var → display */
+  --sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --maxw: 1000px;
 }
 
@@ -47,36 +65,107 @@ body {
 
 body {
   font-family: var(--sans);
-  background: var(--paper);
+  background-color: var(--bg);
   color: var(--ink);
   font-size: 16px;
   line-height: 1.6;
+  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
+/* ── Immersive background: drifting aurora + fine grain (pure CSS, fixed) ─────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -22vmax;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 38vmax at 16% 10%, rgba(255, 77, 141, 0.22), transparent 60%),
+    radial-gradient(44vmax 44vmax at 86% 18%, rgba(54, 224, 255, 0.16), transparent 60%),
+    radial-gradient(52vmax 52vmax at 62% 92%, rgba(123, 107, 255, 0.24), transparent 62%);
+  animation: aurora 26s ease-in-out infinite alternate;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@keyframes aurora {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(3%, 2%, 0) scale(1.14);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes grad-pan {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* ── Type ──────────────────────────────────────────────────────────────────── */
 h1,
 h2,
 h3 {
-  font-family: var(--serif);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
   margin: 0;
+  color: #fff;
 }
-
 h1 {
-  font-size: 2.6rem;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  letter-spacing: -0.04em;
 }
 h2 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
 }
 h3 {
-  font-size: 1.08rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
 }
 
 a {
   color: var(--accent-ink);
+  text-decoration: none;
+}
+
+/* gradient-clipped text for accent words / kickers */
+.grad-text {
+  background: var(--grad);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: grad-pan 6s linear infinite alternate;
+}
+
+/* mono micro-label (uppercase, tracked) — the Active-Theory index tag */
+.tag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
 }
 
 /* ── Layout primitives ─────────────────────────────────────────────────────── */
@@ -126,13 +215,16 @@ a {
   color: var(--ink-soft);
 }
 
-/* ── Panels (card sections) ────────────────────────────────────────────────── */
+/* ── Panels (glass card sections) ──────────────────────────────────────────── */
 .panel {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   padding: 24px;
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  animation: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .panel > .panel-head {
   margin-bottom: 16px;
@@ -172,19 +264,22 @@ textarea {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   padding: 9px 11px;
-  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+input[type='date'] {
+  color-scheme: dark;
 }
 input::placeholder,
 textarea::placeholder {
-  color: #b3ab9a;
+  color: var(--muted);
 }
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
-  background: var(--card);
-  box-shadow: 0 0 0 3px var(--accent-tint);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px var(--accent-tint), 0 0 22px var(--accent-glow);
 }
 textarea {
   resize: vertical;
@@ -194,7 +289,7 @@ textarea {
 /* ── Buttons ───────────────────────────────────────────────────────────────── */
 .btn {
   font: inherit;
-  font-weight: 550;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -202,28 +297,33 @@ textarea {
   padding: 10px 16px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
-  background: var(--card);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, transform 0.05s, opacity 0.12s;
+  transition: background 0.15s, border-color 0.15s, transform 0.06s, box-shadow 0.15s, opacity 0.15s;
 }
 .btn:hover {
-  background: var(--paper-2);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--line-strong);
 }
 .btn:active {
   transform: translateY(1px);
 }
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 .btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background-image: var(--grad);
+  background-size: 180% auto;
+  border-color: transparent;
+  color: #0a0a12;
+  font-weight: 700;
+  box-shadow: 0 6px 22px var(--accent-glow);
 }
 .btn.primary:hover {
-  background: var(--accent-ink);
+  background-position: 100% center;
+  box-shadow: 0 8px 30px var(--accent-glow);
 }
 .btn.ghost {
   background: transparent;
@@ -255,15 +355,18 @@ textarea {
   background: var(--paper);
   color: var(--ink-soft);
   cursor: pointer;
-  transition: all 0.12s;
+  transition: all 0.15s;
 }
 .seg button:hover {
   border-color: var(--accent);
+  color: var(--ink);
 }
 .seg button.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background-image: var(--grad);
+  border-color: transparent;
+  color: #0a0a12;
+  font-weight: 600;
+  box-shadow: 0 3px 16px var(--accent-glow);
 }
 
 /* ── Chips ─────────────────────────────────────────────────────────────────── */
@@ -304,7 +407,7 @@ textarea {
   border-radius: 999px;
   background: var(--line-strong);
   position: relative;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s;
   flex: none;
 }
 .switch .track::after {
@@ -317,10 +420,11 @@ textarea {
   border-radius: 50%;
   background: #fff;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.15s;
+  transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .switch.on .track {
-  background: var(--accent);
+  background-image: var(--grad);
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 .switch.on .track::after {
   transform: translateX(18px);
@@ -332,11 +436,26 @@ textarea {
   line-height: 1.5;
   color: var(--ink-soft);
   background: var(--terracotta-tint);
-  border: 1px solid #ecd9cd;
+  border: 1px solid rgba(255, 122, 89, 0.3);
   border-radius: var(--radius-sm);
   padding: 8px 11px;
 }
 .payoff b {
   color: var(--terracotta);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+/* ── Reduced motion: kill the kinetic layer ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+  .panel,
+  .grad-text,
+  .btn.primary {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto;
+  }
 }

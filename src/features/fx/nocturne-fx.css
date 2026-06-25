@@ -1,0 +1,128 @@
+/* ── Nocturne interaction layer — custom cursor, pointer spotlight, intro ───── */
+
+/* Pointer-tracked spotlight: sits in the background stack (behind content, above
+   the aurora), so the cursor appears to light the dark canvas. */
+.cursor-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: radial-gradient(
+    260px circle at var(--mx, -200px) var(--my, -200px),
+    rgba(123, 107, 255, 0.16),
+    rgba(54, 224, 255, 0.06) 40%,
+    transparent 70%
+  );
+  transition: opacity 0.4s;
+}
+
+/* Custom cursor — hide the native one only on fine pointers. */
+.has-custom-cursor,
+.has-custom-cursor * {
+  cursor: none !important;
+}
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  pointer-events: none;
+  border-radius: 50%;
+  margin-left: -4px;
+  margin-top: -4px;
+  will-change: transform;
+}
+.cursor-dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  transition: width 0.18s, height 0.18s, margin 0.18s, background 0.18s;
+}
+.cursor-ring {
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
+  border: 1px solid var(--accent-ink);
+  box-shadow: 0 0 18px var(--accent-glow), inset 0 0 12px rgba(123, 107, 255, 0.2);
+  transition: width 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), height 0.22s cubic-bezier(0.2, 0.7, 0.2, 1),
+    margin 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.22s, opacity 0.22s;
+}
+/* over something interactive: the ring swells and brightens, the dot shrinks */
+.cursor-hot .cursor-ring {
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  margin-top: -28px;
+  border-color: #fff;
+  box-shadow: 0 0 28px var(--accent-glow), inset 0 0 18px rgba(123, 107, 255, 0.35);
+}
+.cursor-hot .cursor-dot {
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  margin-top: -2.5px;
+}
+.cursor-down .cursor-ring {
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+}
+
+/* Intro reveal — a full-bleed wipe that lifts on load. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  animation: intro-out 1.5s cubic-bezier(0.7, 0, 0.2, 1) forwards;
+}
+.intro-word {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 9vw, 7rem);
+  letter-spacing: -0.04em;
+  animation: intro-word 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+@keyframes intro-word {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+    filter: blur(8px);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+@keyframes intro-out {
+  0%,
+  70% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-glow {
+    display: none;
+  }
+}

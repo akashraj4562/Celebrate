@@ -2,6 +2,7 @@ import { useCurrentPlan } from './store';
 import { Wizard } from './features/wizard/Wizard';
 import { PlanView } from './features/plan/PlanView';
 import { CardDemo } from './features/card/CardDemo';
+import { NocturneFX } from './features/fx/NocturneFX';
 
 export function App() {
   const plan = useCurrentPlan();
@@ -11,5 +12,10 @@ export function App() {
     return <CardDemo />;
   }
 
-  return plan ? <PlanView /> : <Wizard />;
+  return (
+    <>
+      <NocturneFX />
+      {plan ? <PlanView /> : <Wizard />}
+    </>
+  );
 }
